@@ -1,59 +1,59 @@
 # SleepFM Interpretability
 
-Sleep foundation model embedding analizi, similarity engine ve pipeline entegrasyonu.
+Embedding analysis, similarity engine, and pipeline integration for the SleepFM foundation model.
 
 ---
 
-## 🔥 Proje Güncellemeleri
+## 🔥 Project Updates
 
-### ✅ Tamamlanan Modüller
+### ✅ Completed Modules
 
-- `src/similarity_engine.py` — KNN tabanlı Top-5 hastalık önerisi
-- `tests/` — 20 pytest testi (hepsi geçiyor)
-- `notebooks/01_hdbscan_practice.ipynb` — UMAP görselleştirme
+- `src/similarity_engine.py` — KNN-based Top-5 disease recommendation
+- `tests/` — 20 pytest tests (all passing)
+- `notebooks/01_hdbscan_practice.ipynb` — UMAP visualization
 
-### 🚧 Devam Eden Çalışmalar
+### 🚧 In Progress
 
-- `src/pipeline.py` — Uçtan uca inference pipeline'ı
-- `src/visualization.py` — UMAP scatter ve heatmap görselleştirme
-- `notebooks/02_pipeline_demo.ipynb` — Pipeline demo notebook'u
+- `src/pipeline.py` — End-to-end inference pipeline
+- `src/visualization.py` — UMAP scatter and heatmap visualization
+- `notebooks/02_pipeline_demo.ipynb` — Pipeline demo notebook
 
 ---
 
-## 📖 Giriş
+## 📖 Introduction
 
-SleepFM, polisomnografi (PSG) kayıtlarından hastalık risk tahminleri üretmek için eğitilmiş çok-modaliteli bir uyku foundation modelidir. Bu proje, SleepFM'in ürettiği 128-boyutlu gömme vektörlerini analiz etmeyi, kümeleme yapmayı ve KNN tabanlı hastalık benzerlik motoru ile klinik yorumlanabilirlik sağlamayı amaçlamaktadır.
+SleepFM is a multimodal sleep foundation model trained to generate disease risk predictions from polysomnography (PSG) recordings. This project aims to analyze the 128-dimensional embedding vectors produced by SleepFM, perform clustering, and provide clinical interpretability via a KNN-based disease similarity engine.
 
-Embedding uzayı 4 modaliteye bölünmüştür:
+The embedding space is divided into 4 modalities:
 
-| Modalite | Dims | Açıklama |
+| Modality | Dims | Description |
 |---|---|---|
-| **EEG** | 0–31 | Elektroensefalografi |
-| **ECG** | 32–63 | Elektrokardiyografi |
-| **Resp** | 64–95 | Solunum sinyalleri |
-| **EMG** | 96–127 | Elektromiyografi |
+| **EEG** | 0–31 | Electroencephalography |
+| **ECG** | 32–63 | Electrocardiography |
+| **Resp** | 64–95 | Respiratory signals |
+| **EMG** | 96–127 | Electromyography |
 
 ---
 
-## 📖 İçindekiler
+## 📖 Table of Contents
 
-1. [Kurulum](#-kurulum)
-2. [Proje Yapısı](#-proje-yapısı)
-3. [Kullanım](#-kullanım)
-4. [Testler](#-testler)
-5. [Teknik Detaylar](#-teknik-detaylar)
-6. [Kaynaklar](#-kaynaklar)
+1. [Installation](#-installation)
+2. [Project Structure](#-project-structure)
+3. [Usage](#-usage)
+4. [Tests](#-tests)
+5. [Technical Details](#-technical-details)
+6. [References](#-references)
 
 ---
 
-## 💿 Kurulum
+## 💿 Installation
 
-### 🖥️ Gereksinimler
+### 🖥️ Requirements
 
 - Python 3.10+
 - scikit-learn, numpy, umap-learn, hdbscan, matplotlib
 
-### 🚀 Kurulum Adımları
+### 🚀 Setup
 
 ```bash
 git clone https://github.com/AsliAktas/sleepfm_interpretability.git
@@ -63,39 +63,39 @@ pip install -r requirements.txt
 
 ---
 
-## 📁 Proje Yapısı
+## 📁 Project Structure
 
 ```
 sleepfm_interpretability/
 ├── src/
-│   ├── config.py              # Hastalık isimleri ve sabitler
-│   ├── mock_data.py           # Mock embedding üretimi (500 hasta, 12 hastalık)
-│   ├── metrics.py             # Değerlendirme metrikleri
-│   ├── similarity_engine.py   # KNN tabanlı Top-5 hastalık önerisi
-│   └── utils.py               # Yardımcı fonksiyonlar
+│   ├── config.py              # Disease names and constants
+│   ├── mock_data.py           # Mock embedding generation (500 patients, 12 diseases)
+│   ├── metrics.py             # Evaluation metrics
+│   ├── similarity_engine.py   # KNN-based Top-5 disease recommendation
+│   └── utils.py               # Helper functions
 ├── tests/
-│   └── test_embedding_generation.py  # 20 pytest testi
+│   └── test_embedding_generation.py  # 20 pytest tests
 ├── notebooks/
-│   └── 01_hdbscan_practice.ipynb     # UMAP görselleştirme
+│   └── 01_hdbscan_practice.ipynb     # UMAP visualization
 ├── practice/
 │   └── KARAR_NOKTALARI.md
-├── conftest.py                # pytest path konfigürasyonu
+├── conftest.py                # pytest path configuration
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 👩‍💻 Kullanım
+## 👩‍💻 Usage
 
-### Mock Data Üretimi
+### Mock Data Generation
 
 ```python
 from src.mock_data import generate_mock_embeddings
 
 embeddings, labels = generate_mock_embeddings(seed=42, n_samples=500)
-# embeddings: (500, 128) — L2-normalized, 4×32 modalite (EEG/ECG/Resp/EMG)
-# labels: (500,) — 12 hastalık sınıfı
+# embeddings: (500, 128) — L2-normalized, 4×32 modalities (EEG/ECG/Resp/EMG)
+# labels: (500,) — 12 disease classes
 ```
 
 ### Similarity Engine
@@ -111,39 +111,39 @@ results = query_top5(embeddings[0], index, labels, DISEASE_NAMES)
 
 ---
 
-## 🧪 Testler
+## 🧪 Tests
 
 ```bash
 python -m pytest tests/ -v
 ```
 
-20 test, hepsi geçiyor ✅
+20 tests, all passing ✅
 
-| Test Sınıfı | Kapsam |
+| Test Class | Coverage |
 |---|---|
-| `TestEmbeddingShape` | Boyut doğrulama |
-| `TestEmbeddingNormalization` | L2-norm kontrolü |
-| `TestClusterStructure` | Küme yapısı |
-| `TestPerturbation` | Pertürbasyon oranı |
-| `TestNoiseConfig` | Gürültü konfigürasyonu |
-| `TestReproducibility` | Tekrarlanabilirlik |
-| `TestValidation` | Girdi doğrulama |
+| `TestEmbeddingShape` | Shape validation |
+| `TestEmbeddingNormalization` | L2-norm check |
+| `TestClusterStructure` | Cluster structure |
+| `TestPerturbation` | Perturbation rate |
+| `TestNoiseConfig` | Noise configuration |
+| `TestReproducibility` | Reproducibility |
+| `TestValidation` | Input validation |
 
 ---
 
-## ⚙️ Teknik Detaylar
+## ⚙️ Technical Details
 
-| Parametre | Değer |
+| Parameter | Value |
 |---|---|
-| Embedding boyutu | 128-dim |
-| Normalizasyon | L2-normalized |
-| KNN metrik | Euclidean |
-| Similarity formülü | `1 - (mean_distance / 2)` → [0, 1] |
-| Hastalık sayısı | 12 |
+| Embedding size | 128-dim |
+| Normalization | L2-normalized |
+| KNN metric | Euclidean |
+| Similarity formula | `1 - (mean_distance / 2)` → [0, 1] |
+| Number of diseases | 12 |
 
 ---
 
-## 📚 Kaynaklar
+## 📚 References
 
 - **SleepFM**: [A multimodal sleep foundation model for disease prediction](https://doi.org/10.1038/s41591-025-04133-4) — *Nature Medicine, 2026*
 - **GitHub**: [zou-group/sleepfm-clinical](https://github.com/zou-group/sleepfm-clinical)
