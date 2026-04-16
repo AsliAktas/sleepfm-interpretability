@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (do not commit large files or sensitive data)
+data/raw/
+data/processed/
+*.h5
+*.hdf5
+*.edf
+*.pt
+*.ckpt
+
+# Outputs
+outputs/
+*.png
+*.pdf
+*.html
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Pytest cache
+.pytest_cache/
+
+# Temp files
+_test_sim.py
+_smoke_test.py

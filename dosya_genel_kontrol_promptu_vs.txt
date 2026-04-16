@@ -1,0 +1,1 @@
+Tarafsız ve mantıksal bakış açısıyla değerlendir ve analiz et, hiççbir kodda değişiklik yapma ve bana bu kod dosyasının artı ve eksilerini, nasıl daha geliştirilebilir olabileceğini (öyle bir ihtimal varsa), ve daha güvenli daha sürdürülebilir bir hale getirlip getirilemeyeceğini söyle
