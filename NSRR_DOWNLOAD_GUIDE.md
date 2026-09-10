@@ -19,42 +19,52 @@ Detaylı liste: `scratchpad/clean_cohort_20.csv`
 
 ## İndirme Seçenekleri
 
-### Seçenek 1: NSRR CLI (Ruby gem) — ÖNERİLEN
+### Seçenek 1: Python indirme scripti — ÖNERİLEN
+
+Repo'nun içindeki `scripts/download_nsrr_mesa.py` scripti Ruby gem'e ihtiyaç
+duymadan authenticated download yapar. Resume + retry + parallel + verify
+dahil, `truststore` ile Windows SSL sorunlarını da atlar.
 
 **Kurulum** (bir kere):
-```bash
-# Ruby ve gem yoksa: https://rubyinstaller.org (Windows için)
-gem install nsrr
+```powershell
+# sleepfm env aktif olmalı; requirements.txt zaten truststore + requests içerir
+conda activate sleepfm
 ```
 
-**Token ayarı** (NSRR hesap → sleepdata.org/token):
-```bash
-export NSRR_TOKEN="senin_tokenin"
-# Windows PowerShell: $env:NSRR_TOKEN = "senin_tokenin"
+**Token** — https://sleepdata.org/token adresinden al (MESA DUA gerekli):
+```powershell
+$env:NSRR_TOKEN = "senin_tokenin"
 ```
 
-**Toplu indirme**:
-```bash
-cd C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean
-
-# EDF'ler (~4 GB toplam)
-for id in [REDACTED_LIST_PER_DUA] 620 [REDACTED_LIST_PER_DUA]; do
-    padded=$(printf "%04d" $id)
-    nsrr download mesa/polysomnography/edfs/mesa-sleep-${padded}.edf
-    nsrr download mesa/polysomnography/annotations-events-nsrr/mesa-sleep-${padded}-nsrr.xml
-done
+**Çalıştır** (default 20 stratified hasta, ~4 GB):
+```powershell
+python scripts/download_nsrr_mesa.py --out "C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean"
 ```
 
-### Seçenek 2: Manuel Web İndirme
+Ya da custom subject list:
+```powershell
+python scripts/download_nsrr_mesa.py --subjects 620 REDACTED REDACTED --out .
+```
 
-1. https://sleepdata.org/datasets/mesa/files adresine git
+Script:
+- Token'ı önce `api/v1/account/profile.json` ile doğrular (hızlı fail).
+- 3 paralel stream (NSRR rate limit koruma).
+- Range header ile resume (kesilirse aynı komut kaldığı yerden devam eder).
+- 3 retry + exponential backoff.
+- Dosya-boyut sanity check (EDF ≥50 MB, XML ≥5 KB → hata sayfası inmiş mi kontrolü).
+- Sonda `download_manifest.json` yazılır (hangi hasta OK, hangisi fail).
+
+### Seçenek 2: NSRR Ruby CLI (alternatif)
+
+Ruby zaten kuruluysa: `gem install nsrr` sonra `nsrr download <path>` ile.
+Detay: https://github.com/nsrr/nsrr-gem
+
+### Seçenek 3: Manuel Web İndirme
+
+1. https://sleepdata.org/datasets/mesa/files
 2. `polysomnography/edfs/mesa-sleep-{ID}.edf` her ID için tıkla
 3. `polysomnography/annotations-events-nsrr/mesa-sleep-{ID}-nsrr.xml` aynı şekilde
 4. Hepsini `C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean/` altına koy
-
-### Seçenek 3: Python + NSRR API (yazılırsa)
-
-NSRR gem yoksa, `nsrr-download.py` diye bir Python script hazırlanabilir. İhtiyacın olursa söyle.
 
 ## Boyut ve Zaman Tahmini
 

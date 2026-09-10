@@ -1,0 +1,132 @@
+{
+  "resourceType": "RiskAssessment",
+  "status": "final",
+  "subject": {
+    "reference": "Patient/REDACTED"
+  },
+  "occurrenceDateTime": "2026-09-10T21:41:19Z",
+  "method": {
+    "coding": [
+      {
+        "system": "http://custom.ai/models",
+        "code": "sleepfm-clinical-v1",
+        "display": "SleepFM Clinical Risk Prediction Model v1"
+      }
+    ]
+  },
+  "prediction": [
+    {
+      "outcome": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "71908006",
+            "display": "Atrial fibrillation (disorder)"
+          }
+        ]
+      },
+      "probabilityDecimal": 0.41628470723684613,
+      "qualitativeRisk": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+            "code": "low",
+            "display": "Low likelihood"
+          }
+        ]
+      }
+    }
+  ],
+  "extension": [
+    {
+      "url": "http://sleepfm-interpretability/similar-patients",
+      "extension": [
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9626531600952148
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 2.7014218009
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9619230031967163
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 8.3422459893
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.956453800201416
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 10.0
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9560993313789368
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 23.410852713
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9462721943855286
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 18.139534884
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -27,3 +27,9 @@ pytest==7.4.3
 
 # Utilities
 tqdm==4.66.1
+
+# NSRR download script (scripts/download_nsrr_mesa.py)
+# truststore reuses the OS trust store so sleepdata.org's CA chain resolves
+# on Windows conda envs where certifi's bundle is incomplete.
+requests>=2.28
+truststore>=0.9
