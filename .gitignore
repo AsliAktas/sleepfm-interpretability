@@ -25,6 +25,12 @@ env/
 # Data (do not commit large files or sensitive data)
 data/raw/
 data/processed/
+
+# Large binary outputs from Phase 6+ pipeline runs (preprocessed HDF5 + inference embeddings)
+data/smoke_run/
+data/clean_cohort_run/
+data/*/hdf5/
+data/*/embeddings/
 *.h5
 *.hdf5
 *.edf
