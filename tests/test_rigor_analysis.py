@@ -14,6 +14,7 @@ from rigor_analysis import (
     _phipson_smyth_p,
     bonferroni_fdr_correction,
     bonferroni_fdr_family,
+    bootstrap_stability,
     hdbscan_sweep,
     kruskal_p,
     multiseed_stability,
@@ -57,6 +58,23 @@ class TestBonferroniFdrCorrection:
         out_planned = bonferroni_fdr_correction(ps, n_planned=10)
         assert out_planned["bonferroni_p"].iloc[0] > out_default["bonferroni_p"].iloc[0]
         np.testing.assert_allclose(out_planned["bonferroni_p"].iloc[0], 0.01 * 10)
+
+    def test_bh_uses_same_family_size_as_bonferroni(self):
+        """Audit finding 4: BH must use n_planned (not valid.sum()) so a
+        family with NaN entries does not silently relax the correction."""
+        ps = [0.01, 0.02, 0.03, np.nan]
+        # With n_planned=4, the smallest BH-adjusted p is 0.01 * 4/1 = 0.04
+        # (further pooled by the step-down min-cummax); if BH used m=3 it
+        # would give 0.01 * 3/1 = 0.03 — a false-positive-friendly value.
+        out = bonferroni_fdr_correction(ps, n_planned=4)
+        assert out["bh_fdr_p"].iloc[0] >= 0.04 - 1e-9
+
+    def test_bh_fdr_matches_statsmodels_no_nan(self):
+        """Backward-compat: with no NaN entries our BH still equals statsmodels."""
+        ps = [0.01, 0.04, 0.03, 0.005, 0.20]
+        _, ref, _, _ = multipletests(ps, method="fdr_bh")
+        got = bonferroni_fdr_correction(ps)["bh_fdr_p"].values
+        np.testing.assert_allclose(got, ref, rtol=1e-9)
 
     def test_reject_threshold(self):
         ps = [0.001, 0.5]
@@ -181,6 +199,29 @@ class TestMultiseedStability:
         stab = multiseed_stability(X, n_seeds=4)
         assert len(stab.labels_per_seed) == 4
         assert stab.pairwise_ari.shape == (4, 4)
+
+
+class TestBootstrapStability:
+    def test_returns_dataframe_of_correct_shape(self):
+        X = np.random.RandomState(0).normal(size=(30, 128))
+        df = bootstrap_stability(X, n_bootstraps=4, subsample_frac=0.8)
+        assert list(df.columns) == ["bootstrap", "subsample_size", "n_clusters",
+                                    "n_noise", "noise_fraction"]
+        assert len(df) == 4
+        # 80% of 30 = 24
+        assert (df["subsample_size"] == 24).all()
+
+    def test_noise_fraction_bounded(self):
+        X = np.random.RandomState(0).normal(size=(30, 128))
+        df = bootstrap_stability(X, n_bootstraps=3)
+        assert (df["noise_fraction"] >= 0).all()
+        assert (df["noise_fraction"] <= 1).all()
+
+    def test_deterministic_with_same_seed(self):
+        X = np.random.RandomState(0).normal(size=(30, 128))
+        a = bootstrap_stability(X, n_bootstraps=3, seed=7)
+        b = bootstrap_stability(X, n_bootstraps=3, seed=7)
+        pd.testing.assert_frame_equal(a, b)
 
 
 class TestHdbscanSweep:

@@ -25,7 +25,6 @@ plot in 2D) and follows the audit-hardened aggregation conventions.
 from __future__ import annotations
 
 import itertools
-import os
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,9 +33,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-DEFAULT_MESA_XML_DIR = Path(os.environ.get(
-    "MESA_XML_DIR", "C:/Users/User/Desktop/Projeler/SleepFM/mesa"
-))
+from paths import resolve_cohort
 
 from real_embeddings import load_chunk_embeddings
 from clinical_analysis import fit_umap_hdbscan, cluster_summary
@@ -108,7 +105,7 @@ def run_chunk_analysis(
     for sid in subject_ids:
         chunks_per_subject[sid] = chunks_per_subject.get(sid, 0) + 1
 
-    xml_dir = xml_dir or DEFAULT_MESA_XML_DIR
+    xml_dir = Path(xml_dir) if xml_dir else resolve_cohort().xml_dir
     stages_by_subject, xml_skipped = load_chunk_labels_for_cohort(xml_dir, chunks_per_subject)
     if xml_skipped:
         print(f"[chunk_level_analysis:{modality}] "
@@ -217,6 +214,9 @@ def sensitivity_sweep(
     seed: int = 42,
     embedding_dir: Optional[Path] = None,
     xml_dir: Optional[Path] = None,
+    umap_cluster_dim: int = 15,
+    umap_n_neighbors: int = 5,
+    umap_metric: str = "cosine",
 ) -> pd.DataFrame:
     """HDBSCAN min_cluster_size sweep on chunk-level clustering.
 
@@ -224,12 +224,45 @@ def sensitivity_sweep(
     single-patient microclusters; large values collapse structure. Report
     n_clusters / n_noise / stage ARI / subject purity per setting so the
     user can pick a defensible value or show robustness across a range.
+
+    Loads embeddings + XML once and fits UMAP once — HDBSCAN itself is the
+    only per-iteration cost (audit finding 6). Previously each mcs value
+    re-ran the whole `run_chunk_analysis` including HDF5 reads and UMAP
+    fit, which for large cohorts wasted the majority of the runtime.
     """
+    import umap
+    import hdbscan
+    from sklearn.metrics import silhouette_score
+
+    # Load + label once
+    X, subject_ids = load_chunk_embeddings(embedding_dir=embedding_dir, modality=modality)
+    chunks_per_subject: Dict[str, int] = {}
+    for sid in subject_ids:
+        chunks_per_subject[sid] = chunks_per_subject.get(sid, 0) + 1
+    xml_dir = Path(xml_dir) if xml_dir else resolve_cohort().xml_dir
+    stages_by_subject, _ = load_chunk_labels_for_cohort(xml_dir, chunks_per_subject)
+    stage_labels = _align_labels_to_chunks(subject_ids, stages_by_subject)
+
+    # Fit UMAP once — same seed + same input -> identical output across the sweep
+    n = X.shape[0]
+    reducer = umap.UMAP(
+        n_components=min(umap_cluster_dim, max(2, n - 2)),
+        n_neighbors=min(umap_n_neighbors, max(2, n - 1)),
+        min_dist=0.0, metric=umap_metric, random_state=seed,
+    )
+    cluster_coords = reducer.fit_transform(X)
+
     rows = []
     for mcs in min_cluster_sizes:
-        result = run_chunk_analysis(
-            modality=modality, hdbscan_min_cluster_size=mcs, seed=seed,
-            embedding_dir=embedding_dir, xml_dir=xml_dir,
+        clusterer = hdbscan.HDBSCAN(
+            min_cluster_size=mcs, min_samples=1, metric="euclidean",
+        )
+        cluster_labels = clusterer.fit_predict(cluster_coords)
+        # Wrap in a lightweight result for reuse of purity + ARI helpers.
+        result = ChunkAnalysisResult(
+            modality=modality, X=X, subject_ids=subject_ids,
+            stage_labels=stage_labels, cluster_labels=cluster_labels,
+            umap_2d=np.zeros((n, 2)),  # not needed for sweep metrics
         )
         summary = cluster_size_summary(result)
         purity = cluster_subject_purity(result)

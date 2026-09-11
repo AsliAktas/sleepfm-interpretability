@@ -36,8 +36,12 @@ def bonferroni_fdr_correction(
     """Bonferroni + Benjamini-Hochberg FDR correction.
 
     n_planned: family size to use as the denominator. Defaults to len(p_values);
-    pass explicitly when NaN tests should still count as planned hypotheses
-    (Bonferroni family = all attempted tests, not only successful ones).
+    pass explicitly when NaN tests should still count as planned hypotheses.
+    Both Bonferroni AND BH use the same family size (audit finding 4):
+    "Bonferroni family = all attempted tests, not only successful ones" and
+    the same convention applies to BH — a test that returned NaN was still
+    planned, and shrinking the denominator to `valid.sum()` would relax the
+    correction (more false positives) in an inconsistent way.
 
     Returns raw_p, bonferroni_p, bh_fdr_p, reject_bonferroni, reject_fdr.
     """
@@ -51,10 +55,12 @@ def bonferroni_fdr_correction(
     fdr = np.full(len(p), np.nan)
     if valid.sum() > 0:
         order = np.argsort(p[valid])
+        # Ranks of the *valid* tests but the BH denominator is n (planned).
+        # A valid test with rank i out of `valid.sum()` valid p-values, in a
+        # family of n planned hypotheses, gets adjusted p = p_(i) * n / i.
         ranks = np.arange(1, valid.sum() + 1)
-        m = valid.sum()
         p_sorted = p[valid][order]
-        adjusted = np.minimum.accumulate((p_sorted * m / ranks)[::-1])[::-1]
+        adjusted = np.minimum.accumulate((p_sorted * n / ranks)[::-1])[::-1]
         adjusted = np.minimum(adjusted, 1.0)
         fdr_valid = np.empty_like(adjusted)
         fdr_valid[order] = adjusted
@@ -212,12 +218,14 @@ def multiseed_stability(
     umap_n_neighbors: int = 5,
     hdbscan_min_cluster_size: int = 2,
 ) -> StabilityResult:
-    """Fit UMAP+HDBSCAN with N different seeds and measure pairwise ARI.
+    """UMAP-seed sensitivity: N UMAP fits with different random_state,
+    same input matrix and same HDBSCAN hyperparameters.
 
-    High mean ARI (>0.7) means the cluster structure is stable; low ARI (<0.3)
-    means the pipeline is finding noise, not signal. Uses the same
-    fit_umap_hdbscan pipeline as the primary analysis (clustering on the
-    high-dim UMAP embedding, not on the 2D plot layout).
+    Measures how stable the *UMAP init* is — HDBSCAN itself is deterministic
+    once the projected coordinates are fixed. High mean ARI (>0.7) means the
+    UMAP nonlinear projection converges to a similar layout across seeds
+    (audit finding 8: this is NOT whole-pipeline stability; for
+    subsample-vs-hyperparameter robustness use `bootstrap_stability`).
     """
     from sklearn.metrics import adjusted_rand_score
     from clinical_analysis import fit_umap_hdbscan
@@ -249,6 +257,49 @@ def multiseed_stability(
         std_ari=float(upper.std()),
         n_clusters_per_seed=[int(len(np.unique(l[l >= 0]))) for l in labels_per_seed],
     )
+
+
+def bootstrap_stability(
+    X: np.ndarray,
+    n_bootstraps: int = 20,
+    subsample_frac: float = 0.8,
+    umap_n_neighbors: int = 5,
+    hdbscan_min_cluster_size: int = 2,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Whole-pipeline stability under subject-level subsampling.
+
+    Each bootstrap draws `subsample_frac * n` rows without replacement from
+    X, refits UMAP + HDBSCAN, and records how many clusters were found and
+    how many subsampled rows landed in the noise bucket. Complements
+    `multiseed_stability` (which only varies UMAP's random_state on the
+    full dataset) by asking "would this cluster structure survive dropping
+    20 % of the subjects?" — the honest whole-pipeline robustness question.
+    """
+    from clinical_analysis import fit_umap_hdbscan
+
+    n = X.shape[0]
+    subsample_size = max(2, int(subsample_frac * n))
+    rng = np.random.default_rng(seed)
+    rows = []
+    for b in range(n_bootstraps):
+        idx = rng.choice(n, size=subsample_size, replace=False)
+        _, labels = fit_umap_hdbscan(
+            X[idx],
+            umap_n_neighbors=umap_n_neighbors,
+            hdbscan_min_cluster_size=hdbscan_min_cluster_size,
+            seed=seed + b,  # vary UMAP seed *and* subsample together
+        )
+        n_clusters = int(len(np.unique(labels[labels >= 0])))
+        n_noise = int((labels == -1).sum())
+        rows.append({
+            "bootstrap": b,
+            "subsample_size": subsample_size,
+            "n_clusters": n_clusters,
+            "n_noise": n_noise,
+            "noise_fraction": n_noise / subsample_size,
+        })
+    return pd.DataFrame(rows)
 
 
 # ---------------------------------------------------------------------------

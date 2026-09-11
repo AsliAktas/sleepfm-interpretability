@@ -36,9 +36,25 @@ class TestSubjectIdParsing:
         from pathlib import Path
         assert _subject_id_from_filename(Path("mesa-sleep-REDACTED_embeddings.hdf5")) == "REDACTED"
 
-    def test_takes_last_dash_segment(self):
+    def test_takes_regex_matched_digits(self):
         from pathlib import Path
         assert _subject_id_from_filename(Path("mesa-sleep-REDACTED_embeddings.hdf5")) == "REDACTED"
+
+    def test_rejects_versioned_filename(self):
+        """Audit finding 2: 'mesa-sleep-REDACTED-v2_embeddings.hdf5' used to
+        silently return 'v2'. Must now raise ValueError."""
+        from pathlib import Path
+        with pytest.raises(ValueError, match="cannot parse"):
+            _subject_id_from_filename(Path("mesa-sleep-REDACTED-v2_embeddings.hdf5"))
+
+    def test_rejects_unrelated_filename(self):
+        from pathlib import Path
+        with pytest.raises(ValueError):
+            _subject_id_from_filename(Path("some_other_file.hdf5"))
+
+    def test_accepts_5_digit_id(self):
+        from pathlib import Path
+        assert _subject_id_from_filename(Path("mesa-sleep-12345_embeddings.hdf5")) == "12345"
 
 
 class TestLoadSubjectEmbeddings:

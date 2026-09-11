@@ -138,9 +138,6 @@ def build_risk_payload(
     )
 
 
-_CB_MODULE_NAMES = ("config", "models", "main", "risk_engine", "fhir_builder")
-
-
 def translate_to_fhir(
     payload: RiskPayload,
     clinical_bridge_dir: Path = Path("C:/Users/User/Desktop/Projeler/clinical-bridge-main"),
@@ -151,15 +148,24 @@ def translate_to_fhir(
 
     Both projects have top-level modules named `config`, `models` etc., so a
     naive `sys.path.insert` would let sleepfm_interpretability's `config`
-    win when clinical-bridge tries to import its own. We snapshot and
-    restore sys.path + sys.modules around the import so the two projects
-    never share their same-named top-level modules.
+    win when clinical-bridge tries to import its own. We snapshot the full
+    module set before the import and drop *every* newly loaded module
+    afterwards — a whitelist would silently miss any new top-level module
+    the sibling project adds later (audit finding 3).
     """
     import sys
     cb_str = str(clinical_bridge_dir)
     orig_path = list(sys.path)
-    saved_modules = {name: sys.modules.pop(name)
-                     for name in _CB_MODULE_NAMES if name in sys.modules}
+    modules_before = set(sys.modules)
+    conflicting_before = {
+        name: sys.modules[name] for name in tuple(sys.modules)
+        if name.split(".")[0] in {"config", "models", "main", "risk_engine",
+                                  "fhir_builder", "utils"}
+    }
+    # Drop conflicting top-level modules so `from main import ...` inside
+    # clinical-bridge triggers a fresh resolution from cb_str.
+    for name in conflicting_before:
+        sys.modules.pop(name, None)
     try:
         if cb_str in sys.path:
             sys.path.remove(cb_str)
@@ -169,9 +175,12 @@ def translate_to_fhir(
         fhir_resource = adapter.translate(payload.to_clinical_bridge_input())
     finally:
         sys.path[:] = orig_path
-        for name in _CB_MODULE_NAMES:
+        # Remove every module clinical-bridge loaded, regardless of name.
+        added = set(sys.modules) - modules_before
+        for name in added:
             sys.modules.pop(name, None)
-        for name, module in saved_modules.items():
+        # Restore the sleepfm_interpretability originals we shadowed.
+        for name, module in conflicting_before.items():
             sys.modules[name] = module
 
     if attach_neighbours and payload.neighbours:

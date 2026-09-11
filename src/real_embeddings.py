@@ -21,20 +21,34 @@ Aggregation modes:
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import h5py
 import numpy as np
 
+from paths import resolve_cohort
 from utils import normalize_l2
 
 logger = logging.getLogger(__name__)
 
 SLEEPFM_MODALITIES: Tuple[str, ...] = ("BAS", "RESP", "EKG", "EMG")
-DEFAULT_EMBEDDING_DIR = Path(__file__).resolve().parents[1] / "data" / "smoke_run" / "embeddings"
 
 _VALID_AGGREGATES = {"spherical_mean", "mean", "median"}
+
+# MESA subject IDs are 4-5 digit zero-padded integers; the pattern requires
+# the id to be immediately followed by a known token ("_embeddings",
+# "-nsrr", or end of stem) so ambiguous / versioned filenames like
+# "mesa-sleep-REDACTED-v2_embeddings" fail loudly (audit finding 2). Single
+# canonical parser — do not reinvent split()-based extraction elsewhere.
+_MESA_SID_RE = re.compile(r"mesa-sleep-(\d{4,5})(?:_embeddings|-nsrr|\Z)")
+
+
+def _resolved_embedding_dir(embedding_dir: Optional[Path]) -> Path:
+    if embedding_dir is not None:
+        return Path(embedding_dir)
+    return resolve_cohort().embedding_dir
 
 
 def _read_subject_hdf5(path: Path) -> Dict[str, np.ndarray]:
@@ -43,10 +57,19 @@ def _read_subject_hdf5(path: Path) -> Dict[str, np.ndarray]:
 
 
 def _subject_id_from_filename(path: Path) -> str:
-    stem = path.stem
-    if stem.endswith("_embeddings"):
-        stem = stem[: -len("_embeddings")]
-    return stem.split("-")[-1]
+    """Extract the MESA subject id from a SleepFM output filename.
+
+    Uses a strict regex so retry / versioned dumps like
+    'mesa-sleep-REDACTED-v2_embeddings.hdf5' fail loudly instead of quietly
+    returning 'v2' as the subject id (audit finding 2).
+    """
+    m = _MESA_SID_RE.search(path.stem)
+    if not m:
+        raise ValueError(
+            f"cannot parse MESA subject id from {path.name!r}; "
+            "expected 'mesa-sleep-<4-5 digits>...'"
+        )
+    return m.group(1)
 
 
 def _aggregate_chunks(chunks: np.ndarray, mode: str) -> np.ndarray:
@@ -82,7 +105,7 @@ def load_subject_embeddings(
     if aggregate not in _VALID_AGGREGATES:
         raise ValueError(f"unknown aggregate '{aggregate}', expected one of {sorted(_VALID_AGGREGATES)}")
 
-    embedding_dir = Path(embedding_dir) if embedding_dir else DEFAULT_EMBEDDING_DIR
+    embedding_dir = _resolved_embedding_dir(embedding_dir)
     if not embedding_dir.exists():
         raise FileNotFoundError(f"embedding_dir does not exist: {embedding_dir}")
 
@@ -123,7 +146,7 @@ def load_subject_embeddings_multimodal(
     if aggregate not in _VALID_AGGREGATES:
         raise ValueError(f"unknown aggregate '{aggregate}', expected one of {sorted(_VALID_AGGREGATES)}")
 
-    embedding_dir = Path(embedding_dir) if embedding_dir else DEFAULT_EMBEDDING_DIR
+    embedding_dir = _resolved_embedding_dir(embedding_dir)
     files = sorted(embedding_dir.glob("*_embeddings.hdf5"))
     if not files:
         raise FileNotFoundError(f"no *_embeddings.hdf5 files found in {embedding_dir}")
@@ -172,7 +195,7 @@ def load_chunk_embeddings(
     if modality not in SLEEPFM_MODALITIES:
         raise ValueError(f"unknown modality '{modality}', expected one of {SLEEPFM_MODALITIES}")
 
-    embedding_dir = Path(embedding_dir) if embedding_dir else DEFAULT_EMBEDDING_DIR
+    embedding_dir = _resolved_embedding_dir(embedding_dir)
     files = sorted(embedding_dir.glob("*_embeddings.hdf5"))
     if not files:
         raise FileNotFoundError(f"no *_embeddings.hdf5 files found in {embedding_dir}")

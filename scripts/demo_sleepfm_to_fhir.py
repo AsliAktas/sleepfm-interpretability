@@ -35,7 +35,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from clinical_analysis import load_metadata
 from clinical_bridge_adapter import build_risk_payload, translate_to_fhir
-from real_embeddings import DEFAULT_EMBEDDING_DIR, load_subject_embeddings
+from paths import resolve_cohort
+from real_embeddings import load_subject_embeddings
 
 
 def main() -> int:
@@ -48,7 +49,11 @@ def main() -> int:
     parser.add_argument("--k", type=int, default=5,
                         help="Number of nearest neighbours")
     parser.add_argument("--embedding-dir", type=Path, default=None,
-                        help="Directory of *_embeddings.hdf5 files")
+                        help="Directory of *_embeddings.hdf5 files "
+                             "(defaults to $SLEEPFM_COHORT_ROOT/embeddings)")
+    parser.add_argument("--cohort-root", type=Path, default=None,
+                        help="Overrides $SLEEPFM_COHORT_ROOT for this run "
+                             "(sets embedding_dir, metadata_csv, xml_dir together)")
     parser.add_argument("--out", type=Path,
                         default=Path(__file__).resolve().parents[1] / "reports" / "phase9g_demo",
                         help="Output directory for FHIR JSON")
@@ -59,14 +64,22 @@ def main() -> int:
     print("=" * 70)
     print(f"modality={args.modality}  query={args.query_subject}  k={args.k}\n")
 
+    # Cohort resolution surfaces WHICH data is being read — audit finding 1.
+    cohort = resolve_cohort(root=args.cohort_root)
+    embedding_dir = args.embedding_dir or cohort.embedding_dir
+    metadata_csv = cohort.metadata_csv
+    print(f"[cohort] {cohort.label}")
+    print(f"[cohort] embeddings: {embedding_dir}")
+    print(f"[cohort] metadata:   {metadata_csv}\n")
+
     if args.modality == "MULTI":
         from real_embeddings import load_subject_embeddings_multimodal
         X, subject_ids, skipped = load_subject_embeddings_multimodal(
-            embedding_dir=args.embedding_dir,
+            embedding_dir=embedding_dir,
         )
     else:
         X, subject_ids = load_subject_embeddings(
-            embedding_dir=args.embedding_dir, modality=args.modality,
+            embedding_dir=embedding_dir, modality=args.modality,
         )
 
     if args.query_subject not in subject_ids:
@@ -84,7 +97,7 @@ def main() -> int:
     print(f"[cohort] {len(subject_ids)} subjects, embedding dim={X.shape[1]}")
     print(f"[query]  subject {args.query_subject} vs {len(ref_ids)} reference subjects\n")
 
-    meta = load_metadata(subject_ids)
+    meta = load_metadata(subject_ids, csv_path=metadata_csv)
     ahi_by_sid = dict(zip(meta["subject_id"], meta["ahi"]))
     ref_ahi = [ahi_by_sid.get(sid) for sid in ref_ids]
     query_ahi = ahi_by_sid.get(args.query_subject)

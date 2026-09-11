@@ -26,14 +26,12 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+from paths import resolve_cohort
 from real_embeddings import (
     load_subject_embeddings,
     load_subject_embeddings_multimodal,
 )
 
-DEFAULT_METADATA_CSV = Path(
-    "C:/Users/User/Desktop/Projeler/SleepFM/mesa/.csv/mesa-sleep-dataset-0.8.0.csv"
-)
 DEFAULT_REPORT_DIR = Path(__file__).resolve().parents[1] / "reports" / "phase7"
 
 METADATA_COLS = {
@@ -60,15 +58,33 @@ class ClusterResult:
     modality_key: str
 
 
-def load_metadata(subject_ids: List[str], csv_path: Path = DEFAULT_METADATA_CSV) -> pd.DataFrame:
+def load_metadata(subject_ids: List[str], csv_path: Optional[Path] = None) -> pd.DataFrame:
     """Return one metadata row per subject_id in the requested order.
 
     Missing subject_ids appear as all-NaN rows; a warning is logged listing
     them so callers can decide whether to filter. Uses reindex (not .loc) so
     typos or subjects absent from the CSV do not raise KeyError.
+
+    Fails loudly (ValueError) if the CSV lacks the expected columns — this
+    is a MESA-version compatibility guard (audit finding 7); the alternative
+    was a cryptic KeyError deep in a Pandas call.
     """
+    if csv_path is None:
+        csv_path = resolve_cohort().metadata_csv
     df = pd.read_csv(csv_path, low_memory=False)
+    missing_cols = set(METADATA_COLS) - set(df.columns)
+    if missing_cols:
+        raise ValueError(
+            f"MESA CSV {Path(csv_path).name} missing expected columns: "
+            f"{sorted(missing_cols)}. "
+            "Update METADATA_COLS in clinical_analysis.py or check your MESA "
+            "data-dictionary version."
+        )
     df = df[list(METADATA_COLS.keys())].rename(columns=METADATA_COLS)
+    # Coerce mesaid to numeric so a stray non-integer row does not crash the
+    # whole cohort load (audit finding 7).
+    df["mesaid"] = pd.to_numeric(df["mesaid"], errors="coerce")
+    df = df.dropna(subset=["mesaid"])
     df["mesaid_str"] = df["mesaid"].astype(int).map(lambda x: f"{x:04d}")
     df["subject_id"] = df["mesaid_str"]
     result = (
@@ -84,11 +100,23 @@ def load_metadata(subject_ids: List[str], csv_path: Path = DEFAULT_METADATA_CSV)
     return result
 
 
+def _auto_min_cluster_size(n: int) -> int:
+    """Heuristic min_cluster_size when the caller does not specify one.
+
+    A commonly cited HDBSCAN rule of thumb is `max(2, sqrt(n))`; we halve
+    that to keep small structures visible without dissolving everything
+    into noise. For n=20 this returns 2 (matching the old hard-coded
+    default), for n=2000 it returns ~22 — no more accidental hundreds of
+    3-patient microclusters (audit finding 5).
+    """
+    return max(2, int(np.sqrt(n) / 2))
+
+
 def fit_umap_hdbscan(
     X: np.ndarray,
     umap_n_neighbors: int = 5,
     umap_min_dist: float = 0.1,
-    hdbscan_min_cluster_size: int = 2,
+    hdbscan_min_cluster_size: Optional[int] = None,
     hdbscan_min_samples: int = 1,
     seed: int = 42,
     cluster_dim: int = 15,
@@ -116,6 +144,17 @@ def fit_umap_hdbscan(
     n = X.shape[0]
     safe_neighbors = min(umap_n_neighbors, max(2, n - 1))
     safe_cluster_dim = min(cluster_dim, max(2, n - 2))
+    if hdbscan_min_cluster_size is None:
+        hdbscan_min_cluster_size = _auto_min_cluster_size(n)
+        logger.debug("fit_umap_hdbscan: n=%d -> auto min_cluster_size=%d",
+                     n, hdbscan_min_cluster_size)
+    if n > 200 and hdbscan_min_cluster_size < _auto_min_cluster_size(n):
+        logger.warning(
+            "fit_umap_hdbscan: min_cluster_size=%d is small for n=%d "
+            "(auto suggests %d). Expect many single-patient microclusters "
+            "and long runtime.",
+            hdbscan_min_cluster_size, n, _auto_min_cluster_size(n),
+        )
 
     cluster_reducer = umap.UMAP(
         n_components=safe_cluster_dim,
