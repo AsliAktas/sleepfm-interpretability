@@ -1,3 +1,9 @@
+> ⚠️ **Phase 15'te bu raporun bazı iddiaları REVİZE edildi.** Adversarial
+> review göstermiştir ki: (1) "MULTI-BMI + EMG-BMI iki yeni sinyal" iddiası
+> cross-modality Bonferroni sonrası çürüdü (0 anlamlı bulgu), (2) "memorization
+> + biometric karışım" yorumu için session-shuffle null testi tam ayrım
+> yapamıyor. Güncel yorum için: `../phase15_defensibility/README.md`.
+
 # Phase 13 — Clean Cohort Sonuçları ve Kontamine ile Karşılaştırma
 
 > **Bu ilk gerçek bilimsel sonuçlar.** 20 MESA hastası SleepFM'in test split'inden

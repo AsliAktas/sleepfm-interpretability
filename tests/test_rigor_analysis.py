@@ -14,12 +14,15 @@ from rigor_analysis import (
     _phipson_smyth_p,
     bonferroni_fdr_correction,
     bonferroni_fdr_family,
+    bootstrap_ci_mean,
     bootstrap_stability,
     hdbscan_sweep,
     kruskal_p,
     multiseed_stability,
+    null_purity_from_label_shuffle,
     permutation_test_familywise,
     permutation_test_pvalue,
+    session_shuffle_null_purity,
 )
 
 
@@ -199,6 +202,75 @@ class TestMultiseedStability:
         stab = multiseed_stability(X, n_seeds=4)
         assert len(stab.labels_per_seed) == 4
         assert stab.pairwise_ari.shape == (4, 4)
+
+
+class TestBootstrapCiMean:
+    def test_returns_three_finite_values(self):
+        rng = np.random.default_rng(0)
+        vals = rng.normal(loc=5.0, scale=1.0, size=100)
+        mean, lo, hi = bootstrap_ci_mean(vals, n_bootstraps=500)
+        assert lo < mean < hi
+        assert 4.5 < mean < 5.5
+
+    def test_narrow_ci_for_low_variance(self):
+        vals = np.ones(50) * 3.0
+        mean, lo, hi = bootstrap_ci_mean(vals, n_bootstraps=500)
+        assert hi - lo < 1e-6
+
+    def test_too_few_values_returns_nan(self):
+        mean, lo, hi = bootstrap_ci_mean(np.array([1.0]))
+        assert np.isnan(mean) and np.isnan(lo) and np.isnan(hi)
+
+
+class TestNullPurityFromLabelShuffle:
+    def test_planted_high_purity_beats_null(self):
+        # 3 clusters × 10 chunks each, one subject per cluster → purity 1.0.
+        # With only 3 subjects it is easy for the random shuffle to hit high
+        # purity by luck, so we need a slightly larger planted structure.
+        labels = np.array([0] * 10 + [1] * 10 + [2] * 10)
+        subjects = ["A"] * 10 + ["B"] * 10 + ["C"] * 10
+        obs, null_mean, p, null = null_purity_from_label_shuffle(
+            labels, subjects, n_permutations=200,
+        )
+        assert obs == pytest.approx(1.0)
+        assert null_mean < obs
+        assert p < 0.05
+
+    def test_random_purity_matches_null(self):
+        # Random subject assignment -> observed purity ~ null purity
+        rng = np.random.default_rng(0)
+        labels = rng.integers(0, 4, size=60)
+        subjects = [rng.choice(["A", "B", "C"]) for _ in range(60)]
+        obs, null_mean, p, null = null_purity_from_label_shuffle(
+            labels, subjects, n_permutations=200,
+        )
+        assert p > 0.05  # not distinguishable from chance
+
+    def test_empirical_p_bounded(self):
+        labels = np.array([0, 0, 1, 1])
+        subjects = ["A", "A", "B", "B"]
+        _, _, p, _ = null_purity_from_label_shuffle(
+            labels, subjects, n_permutations=50,
+        )
+        assert 1 / 51 <= p <= 1.0
+
+
+class TestSessionShuffleNullPurity:
+    def test_renaming_preserves_purity(self):
+        """Joint subject-label permutation should give the same purity as
+        observed when clusters ARE subject-shaped (renaming does nothing)."""
+        labels = np.array([0, 0, 0, 1, 1, 1])
+        subjects = ["A", "A", "A", "B", "B", "B"]
+        obs, null_mean, p = session_shuffle_null_purity(
+            labels, subjects, n_permutations=50,
+        )
+        assert obs == pytest.approx(null_mean, abs=1e-9)
+
+    def test_purity_zero_when_mixed(self):
+        labels = np.array([0, 0, 0, 0])
+        subjects = ["A", "B", "C", "D"]
+        obs, _, _ = session_shuffle_null_purity(labels, subjects, n_permutations=10)
+        assert obs == 0.25
 
 
 class TestBootstrapStability:

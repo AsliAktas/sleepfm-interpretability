@@ -27,7 +27,13 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-DEFAULT_CONDITION = "Atrial Fibrillation"  # only condition currently mapped in clinical-bridge
+# AUDIT REVIEW FIX — semantic mismatch: previously defaulted to "Atrial
+# Fibrillation" (SNOMED 71908006) even though the risk we compute is a
+# similarity-weighted AHI (a sleep-apnea metric). Downstream FHIR consumers
+# would have filed our payloads under the wrong disease bucket. Default
+# now matches the underlying metric; callers can still pick "Atrial
+# Fibrillation" explicitly when driving a real AFib CoxPH head.
+DEFAULT_CONDITION = "Obstructive Sleep Apnea"
 SEVERE_AHI_THRESHOLD = 30.0                 # AHI≥30 = severe OSA (AASM)
 
 

@@ -18,12 +18,121 @@ Adds four analyses on top of clinical_analysis.py:
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+
+
+# ---------------------------------------------------------------------------
+# 0. Bootstrap CI and null-distribution helpers (added Phase 15)
+# ---------------------------------------------------------------------------
+
+def bootstrap_ci_mean(
+    values: np.ndarray,
+    n_bootstraps: int = 2000,
+    ci: float = 95.0,
+    seed: int = 42,
+) -> Tuple[float, float, float]:
+    """Return (mean, ci_low, ci_high) for a percentile bootstrap of the mean.
+
+    Added after the adversarial review flagged every headline metric in
+    reports as a point estimate without uncertainty. Use for stability
+    ARI, silhouette, subject purity — anything reported in a summary
+    table.
+    """
+    values = np.asarray(values, dtype=float)
+    values = values[~np.isnan(values)]
+    if len(values) < 2:
+        return float("nan"), float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    n = len(values)
+    boots = np.empty(n_bootstraps)
+    for i in range(n_bootstraps):
+        boots[i] = rng.choice(values, size=n, replace=True).mean()
+    alpha = (100 - ci) / 2
+    return (float(values.mean()),
+            float(np.percentile(boots, alpha)),
+            float(np.percentile(boots, 100 - alpha)))
+
+
+def _cluster_purity(cluster_labels: np.ndarray, subject_ids: List[str]) -> float:
+    """Mean top-subject share across non-noise clusters — matches
+    `chunk_level_analysis.cluster_subject_purity`."""
+    shares: List[float] = []
+    for cluster in np.unique(cluster_labels):
+        if cluster < 0:
+            continue
+        members = [s for s, c in zip(subject_ids, cluster_labels) if c == cluster]
+        if not members:
+            continue
+        top = Counter(members).most_common(1)[0][1]
+        shares.append(top / len(members))
+    return float(np.mean(shares)) if shares else float("nan")
+
+
+def null_purity_from_label_shuffle(
+    cluster_labels: np.ndarray,
+    subject_ids: List[str],
+    n_permutations: int = 500,
+    seed: int = 42,
+) -> Tuple[float, float, float, np.ndarray]:
+    """Chance level for subject purity via subject-label shuffling.
+
+    Keeps cluster sizes intact and reassigns subject labels randomly; the
+    resulting purity is the null a random labeller would achieve.
+    Returns (observed, null_mean, empirical_p, null_distribution). Empirical
+    p is Phipson-Smyth bounded.
+
+    Rationale from adversarial review: "1/n_subjects" is NOT the correct
+    baseline because HDBSCAN cluster sizes (typically 50-60 chunks in our
+    pipeline) push the expected top-share far above 1/n under the
+    multinomial null. Simulate it.
+    """
+    observed = _cluster_purity(cluster_labels, subject_ids)
+    rng = np.random.default_rng(seed)
+    sids_array = np.asarray(subject_ids)
+    null = np.empty(n_permutations)
+    for i in range(n_permutations):
+        shuffled = rng.permutation(sids_array).tolist()
+        null[i] = _cluster_purity(cluster_labels, shuffled)
+    count_ge = int(np.sum(null >= observed))
+    empirical_p = float((count_ge + 1) / (n_permutations + 1))
+    return observed, float(np.nanmean(null)), empirical_p, null
+
+
+def session_shuffle_null_purity(
+    cluster_labels: np.ndarray,
+    subject_ids: List[str],
+    n_permutations: int = 200,
+    seed: int = 42,
+) -> Tuple[float, float, float]:
+    """Alternative null: shuffle subject IDs *jointly* (each subject's chunks
+    stay together but get re-mapped to a different subject label). Used to
+    ask whether observed purity is more than a naming permutation would
+    explain — i.e., whether the geometry actually clusters by subject or
+    just names one cluster per session.
+
+    This gives (observed, null_mean, empirical_p) where null_mean should
+    be identical to observed if HDBSCAN found real per-subject islands;
+    a large gap means observed purity is driven by chunk placement, not
+    subject renaming, and is more reassuring for the "biometric" claim.
+    """
+    observed = _cluster_purity(cluster_labels, subject_ids)
+    unique = list(dict.fromkeys(subject_ids))  # preserve first-seen order
+    rng = np.random.default_rng(seed)
+    null = np.empty(n_permutations)
+    for i in range(n_permutations):
+        perm = rng.permutation(unique)
+        mapping = dict(zip(unique, perm))
+        relabeled = [mapping[s] for s in subject_ids]
+        null[i] = _cluster_purity(cluster_labels, relabeled)
+    count_ge = int(np.sum(null >= observed))
+    empirical_p = float((count_ge + 1) / (n_permutations + 1))
+    return observed, float(np.nanmean(null)), empirical_p
 
 
 # ---------------------------------------------------------------------------
