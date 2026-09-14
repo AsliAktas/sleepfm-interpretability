@@ -82,6 +82,14 @@ Phase 13c'de "cluster stability çok iyi (ARI ~0.7)" dedim ama CI yoktu.
 **Bulgu:** CI'ler dar (±0.03-0.08). Küme yapısı gerçekten stabil, iddia
 doğru; sadece belirsizlik ölçümü şu ana kadar eksikti.
 
+**⚠️ Kapsam kısıtı — §9 ile birlikte oku:** Bu CI'ler sadece **UMAP init
+seed** varyansını yansıtır (multiseed_stability full 20-subject veri
+üzerinde farklı seed'lerle koşuluyor). Subject-composition varyansı bu
+CI'nin içinde yok. §9'daki bootstrap_stability subject-dropout ölçümü
+gösterir ki whole-pipeline belirsizliği daha büyük (cluster count CV
+%20-35). "Küme yapısı stabil" iddiası bu ayrımla okunmalı: **UMAP-seed
+dimension'ında stabil, subject-dropout dimension'ında mütevazı**.
+
 ### 5. Kontamine vs Clean karşılaştırma — daha ölçülü Δ
 
 Phase 13c'de BAS purity 0.74 → 0.62 "16 puan düşüş, karışım" dedim.
@@ -138,40 +146,52 @@ alan; farklı implementasyonlar farklı konvansiyonlar kullanıyor. Phase 12
 fix'i (\*100) belgelendi, `_validate_fhir` içinde ras-2 explicit check
 var. Değişiklik yok — mevcut davranış defensible.
 
-### 9. Subject-dropout robustness — Phase 16 ekleme
+### 9. Subject-dropout robustness — Phase 16 ekleme (revize)
 
 Phase 15 ARI CI'leri sadece **UMAP init seed** varyansını ölçüyordu
-(`multiseed_stability`). Bir sonraki bağımsız denetim şunu işaret etti:
-"whole-pipeline stability" için subject-dropout robustness gerekir —
-"20 hastanın 4'ünü rasgele çıkarırsan yapı ayakta kalır mı?" `bootstrap_stability`
-kod tabanında vardı ama Phase 15'te koşulmamıştı. Şimdi 50 bootstrap ×
-subsample_frac=0.8 (16/20 subject) ile koşuldu:
+(`multiseed_stability`). Bağımsız denetim "whole-pipeline stability"
+için subject-dropout robustness gerektiğini işaret etti — "20 hastanın
+4'ünü rasgele çıkarırsan yapı ayakta kalır mı?"
+
+**Phase 16 kayıt hatası — dürüst düzeltme:** Phase 16g'de bu bulguya
+verdiğim ilk çıktı yanlış cohort'tan üretildi. `run_bootstrap_stability.py`
+`load_subject_embeddings(modality=modality)` çağrısını `embedding_dir`
+parametresi olmadan yapıyordu; `resolve_cohort()` `SLEEPFM_COHORT_ROOT`
+env var setli değilken **kontamine `smoke_run`** default'una düşüyor.
+Sonuçta Phase 16g commit'te (`dfa116f`) rapor edilen ilk tablo aslında
+kontamine cohort'un stability'siydi, clean cohort'un değil. Phase 16m'de
+script argparse ile refactor edildi ve default `data/clean_cohort_run/`
+olarak sabitlendi; sayılar yeniden koşuldu. Aşağıdaki tablo **clean
+cohort için doğru sayıları** taşıyor.
 
 | Modalite | Ort. küme | Std | Aralık | CV |
 |---|---:|---:|---|---:|
-| BAS | 4.78 | 1.37 | [2, 6] | 29% |
-| RESP | 4.26 | 1.23 | [2, 6] | 29% |
-| EKG | 4.04 | 1.56 | [2, 8] | **39%** |
-| EMG | 5.18 | 0.87 | [3, 7] | 17% |
-| MULTI | 4.76 | 1.15 | [2, 7] | 24% |
+| BAS | 5.52 | 1.15 | [2, 8] | 20.8% |
+| RESP | 4.00 | 1.39 | [2, 7] | **34.6%** |
+| EKG | 3.50 | 1.09 | [2, 6] | 31.2% |
+| EMG | 4.76 | 1.15 | [2, 7] | 24.2% |
+| MULTI | 4.78 | 1.06 | [2, 7] | **20.8%** (en stabil) |
 
-**Bulgular:**
-- **EMG en stabil** (CV %17, en dar aralık). EMG kümelerinin subject-drop'a
-  daha dayanıklı olması Phase 13c'deki "EMG purity clean cohort'ta yükseldi"
-  bulgusuyla tutarlı (belki daha coarse ama daha stable clustering)
-- **EKG en oynak** (CV %39, [2, 8] aralığı) — bir bootstrap'ta 2 küme,
-  başka bir bootstrap'ta 8 küme çıkabiliyor. Bu, EKG için "5 küme var"
-  gibi bir iddianın **defensible olmadığı** anlamına geliyor
+**Bulgular (clean cohort):**
+- **MULTI ve BAS en stabil** (CV %20.8). BAS için range [2, 8] geniş
+  olmasına rağmen ortalama küme sayısı yüksek olduğundan CV mütevazı
+- **RESP en oynak** (CV %34.6, [2, 7] aralığı) — clean cohort'ta RESP
+  kümelemesi subject-drop'a en hassas modalite. Phase 13c'de "RESP en
+  güvenilir modalite" yorumunu **yumuşatıyor**: RESP subject purity
+  cohortlar arası stabil ama küme sayısı değil
+- **EKG range dar (2-6) ama ortalama küçük (3.5)** — hangi 4 subject
+  düşerse cluster count kolayca ±40% oynayabiliyor. "EKG için 3 küme
+  var" gibi absolute iddia defensible değil
 - Genel olarak n=20'de cluster count subject-composition'a hassas.
   ARI bootstrap CI'ları (§4) sıkı görünüyordu ([0.68, 0.75] gibi) ama
   bu sadece UMAP init varyansıydı — **whole-pipeline uncertainty daha
-  büyük**
-- n=100 hipotez: subject sayısı arttıkça CV düşer beklenir; EKG'nin
+  büyük**. §4 tablosu bu §9 bulgusuyla birlikte okunmalı
+- n=100 hipotez: subject sayısı arttıkça CV düşer beklenir; RESP'in
   görece stabilite kazanması özellikle test edilecek
 
 **Ne değişiyor:** Phase 13c'deki "cluster stability çok iyi" yorumu
 sadece UMAP-seed dimension'ında geçerli. Cluster count'ların
-whole-pipeline stability'si mütevazı — n=100'e kadar "5 küme var"
+whole-pipeline stability'si mütevazı — n=100'e kadar "N küme var"
 gibi absolute iddialar askıda kalmalı.
 
 ## Yeni Fonksiyonlar (rigor_analysis.py)

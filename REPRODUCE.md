@@ -214,12 +214,14 @@ Phase 13c sayılarını üretmek için ya scripti geçici olarak
 `reports/phase13c_rigor_clean` ile koşulur, ya da çıktı üretildikten
 sonra klasör isimlendirilir.
 
-Beklenen headline (Phase 13c):
-- BAS: min_p ~0.16, familywise min-p ~0.41, ARI ~0.72
-- RESP: min_p ~0.14, familywise min-p ~0.37, ARI ~0.54
-- EKG: min_p ~0.16, familywise min-p ~0.40, ARI ~0.80
-- EMG: min_p ~0.002, familywise min-p ~0.006, ARI ~0.69
-- MULTI: min_p ~0.007, familywise min-p ~0.023, ARI ~0.62
+**Beklenen headline (Phase 13c)** — committed [`SUMMARY.csv`](reports/phase13c_rigor_clean/SUMMARY.csv)
+ile birebir; bu tablo `scripts/regen_reproduce_tables.py` ile üretildi:
+
+- **BAS**: min_p=0.1588, familywise min-p=0.4106, ARI=0.718 (std=0.122, n_clusters_mode=7)
+- **RESP**: min_p=0.1439, familywise min-p=0.3656, ARI=0.542 (std=0.253, n_clusters_mode=2)
+- **EKG**: min_p=0.1578, familywise min-p=0.4036, ARI=0.795 (std=0.175, n_clusters_mode=3)
+- **EMG**: min_p=0.0020, familywise min-p=0.0060, ARI=0.694 (std=0.196, n_clusters_mode=4)
+- **MULTI**: min_p=0.0070, familywise min-p=0.0230, ARI=0.615 (std=0.152, n_clusters_mode=6)
 
 ---
 
@@ -236,10 +238,29 @@ python scripts/run_bootstrap_stability.py
 ```
 
 Beklenen çıktı (`reports/phase15_defensibility/`):
-- `subject_purity_null_baselines.csv` — observed vs shuffle, p=0.002
-- `cross_modality_family_correction.csv` — 29 test, 0 anlamlı
-- `ari_bootstrap_ci.csv` — CI'ler dar (±0.03-0.08)
-- `bootstrap_stability_summary.csv` — cluster count CV %17-39
+
+**`ari_bootstrap_ci.csv`** — committed birebir:
+```
+modality  mean_ari  ci95_low  ci95_high
+     BAS    0.7180    0.6823     0.7526
+    RESP    0.5420    0.4712     0.6167
+     EKG    0.7953    0.7429     0.8433
+     EMG    0.6941    0.6360     0.7536
+   MULTI    0.6151    0.5703     0.6610
+```
+
+**`bootstrap_stability_summary.csv`** — committed birebir (clean cohort):
+```
+modality  clusters_mean  clusters_std  clusters_min  clusters_max  clusters_cv
+     BAS           5.52         1.147             2             8        20.8%
+    RESP           4.00         1.385             2             7        34.6%
+     EKG           3.50         1.093             2             6        31.2%
+     EMG           4.76         1.153             2             7        24.2%
+   MULTI           4.78         1.055             2             7        22.1%
+```
+
+Diğer üretilen dosyalar:
+- `cross_modality_family_correction.csv` — 29 test, 0 Bonferroni-anlamlı
 - `purity_contaminated_vs_clean.csv` — Δ tablosu
 
 ---
@@ -249,17 +270,25 @@ Beklenen çıktı (`reports/phase15_defensibility/`):
 Yeniden üretilen dosyaları git'teki commit edilmiş sayılarla karşılaştır:
 
 ```powershell
-python -c "import pandas as pd; a=pd.read_csv('reports/phase15_defensibility/subject_purity_null_baselines.csv'); print(a.to_string(index=False))"
+python scripts/regen_reproduce_tables.py
 ```
 
-**Beklenen (Phase 15):**
+Bu script bu belgedeki §9-11 tablolarını **committed CSV'lerden birebir**
+üretir. Kendi lokal çıktın bu tablolarla eşleşmiyorsa environment drift
+var demektir.
+
+**Beklenen `subject_purity_null_baselines.csv`** (Phase 15, birebir committed):
 ```
 modality  n_chunks  n_clusters  observed_purity  label_shuffle_null_mean  label_shuffle_p
-     BAS      2539          15         0.636470                 0.110280         0.001996
-    RESP      2539           8         0.357621                 0.110213         0.001996
-     EKG      2539          10         0.531469                 0.117921         0.001996
-     EMG      2539          14         0.729421                 0.101823         0.001996
+     BAS      2539          36         0.636530                 0.114733         0.001996
+    RESP      2539          24         0.363649                 0.111470         0.001996
+     EKG      2539          30         0.530961                 0.115408         0.001996
+     EMG      2539           7         0.732421                 0.104090         0.001996
 ```
+
+Not: `n_clusters` chunk-level HDBSCAN'in tespit ettiği küme sayısıdır
+(default `hdbscan_min_cluster_size=30`, 2539 chunk üzerinde). Subject
+sayısı (20) ile karışmasın.
 
 Farklı sayılar görüyorsan olası nedenler:
 - Python sürümü farkı (3.10 dışı → numpy floating point drift)

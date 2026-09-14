@@ -18,12 +18,20 @@ Bu script her yeni cohort için (Phase 16, n=100 vs.) tekrar koşulmalı ve
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 
 import pandas as pd
+
+
+# Known-good SHA256 of the SleepFM upstream `dataset_split.json` this cohort
+# was validated against. If the upstream repo updates the manifest, this
+# hash should change and the analysis must be re-audited. The script warns
+# on mismatch but does not fail — new upstream splits may be legitimate.
+KNOWN_SPLIT_SHA256 = "57d5019a0d67a1209fe1f8caa4a5f96067dec0725ac7a79e04fe407201a577db"
 
 
 SPLIT_FILE_DEFAULT = Path(
@@ -53,6 +61,11 @@ def extract_ids(paths):
 
 def cohort_ids_from_dir(cohort_dir: Path) -> set[str]:
     return extract_ids(cohort_dir.glob("mesa-sleep-*"))
+
+
+def compute_sha256(path: Path) -> str:
+    with path.open("rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
 
 
 def load_splits(split_file: Path) -> dict[str, set[str]]:
@@ -94,9 +107,19 @@ def main():
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
+    split_sha = compute_sha256(args.split_file)
+    if split_sha == KNOWN_SPLIT_SHA256:
+        print(f"[ok] dataset_split.json SHA matches known-good: {split_sha[:12]}...")
+    else:
+        print(f"[warn] dataset_split.json SHA mismatch")
+        print(f"       expected: {KNOWN_SPLIT_SHA256}")
+        print(f"       got:      {split_sha}")
+        print(f"       upstream repo may have updated the manifest; re-audit needed")
+
     cohort = cohort_ids_from_dir(args.cohort_dir)
     splits = load_splits(args.split_file)
     df = crosscheck(cohort, splits)
+    df.insert(0, "split_file_sha256", split_sha)
 
     print(f"Cohort ({args.cohort_label}): {len(cohort)} subjects")
     print(f"IDs: {sorted(cohort)}\n")

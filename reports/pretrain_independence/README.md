@@ -12,6 +12,12 @@ repo içinden) altı kümeye ayrılır: `pretrain`, `train`, `validation`,
 `test`, `temporal_test`, `external_validation`. Clean cohort'un 20
 subject ID'si her split ile küme kesişimi olarak karşılaştırılır.
 
+**Split dosyası pinning:** Script bilinen-iyi SHA256'yı (`57d5019a...`)
+her koşumda kontrol eder. Upstream repo split'i güncelledi ve hash
+değiştiyse uyarı verir (koşumu durdurmaz — yeni split meşru olabilir,
+sadece yeniden denetim gerektirir). Bu upstream drift'i sessizce
+geçmeyi engeller.
+
 Kod: [`scripts/verify_cohort_pretrain_independence.py`](../../scripts/verify_cohort_pretrain_independence.py)
 
 ## Sonuç — Clean Cohort (n=20)
