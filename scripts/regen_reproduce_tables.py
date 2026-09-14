@@ -85,6 +85,36 @@ def fmt_bootstrap_stability() -> str:
     return "\n".join(lines)
 
 
+def fmt_bootstrap_stability_phase15_table() -> str:
+    """The compact Markdown table used in phase15_defensibility README §9."""
+    df = pd.read_csv(PHASE15 / "bootstrap_stability_summary.csv")
+    # Rank by CV to annotate "en stabil" / "en oynak" without hand-typing.
+    df = df.sort_values("clusters_cv").reset_index(drop=True)
+    most_stable = df.iloc[0]["modality"]
+    most_volatile = df.iloc[-1]["modality"]
+
+    lines = ["## Phase 15 §9 subject-dropout table — birebir committed\n"]
+    lines.append("| Modalite | Ort. küme | Std | Aralık | CV |")
+    lines.append("|---|---:|---:|---|---:|")
+    # Present in canonical BAS/RESP/EKG/EMG/MULTI order for stability.
+    canon = pd.read_csv(PHASE15 / "bootstrap_stability_summary.csv")
+    for _, row in canon.iterrows():
+        cv_pct = row["clusters_cv"] * 100
+        annotation = ""
+        if row["modality"] == most_stable:
+            annotation = " (en stabil)"
+        elif row["modality"] == most_volatile:
+            annotation = " (en oynak)"
+        cv_str = f"**{cv_pct:.1f}%**{annotation}" if annotation else f"{cv_pct:.1f}%"
+        lines.append(
+            f"| {row['modality']} | {row['clusters_mean']:.2f} | "
+            f"{row['clusters_std']:.2f} | "
+            f"[{int(row['clusters_min'])}, {int(row['clusters_max'])}] | "
+            f"{cv_str} |"
+        )
+    return "\n".join(lines)
+
+
 def main():
     print("=" * 72)
     print("REPRODUCE.md numeric snippet regeneration")
@@ -96,6 +126,8 @@ def main():
     print(fmt_ari_ci())
     print()
     print(fmt_bootstrap_stability())
+    print()
+    print(fmt_bootstrap_stability_phase15_table())
     print()
     print(fmt_purity_null())
 

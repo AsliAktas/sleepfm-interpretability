@@ -166,15 +166,20 @@ cohort için doğru sayıları** taşıyor.
 
 | Modalite | Ort. küme | Std | Aralık | CV |
 |---|---:|---:|---|---:|
-| BAS | 5.52 | 1.15 | [2, 8] | 20.8% |
-| RESP | 4.00 | 1.39 | [2, 7] | **34.6%** |
+| BAS | 5.52 | 1.15 | [2, 8] | **20.8%** (en stabil) |
+| RESP | 4.00 | 1.39 | [2, 7] | **34.6%** (en oynak) |
 | EKG | 3.50 | 1.09 | [2, 6] | 31.2% |
 | EMG | 4.76 | 1.15 | [2, 7] | 24.2% |
-| MULTI | 4.78 | 1.06 | [2, 7] | **20.8%** (en stabil) |
+| MULTI | 4.78 | 1.06 | [2, 7] | 22.1% |
+
+Sayılar: [`bootstrap_stability_summary.csv`](bootstrap_stability_summary.csv)
+ile birebir; `scripts/regen_reproduce_tables.py` bu tabloyu da üretir.
 
 **Bulgular (clean cohort):**
-- **MULTI ve BAS en stabil** (CV %20.8). BAS için range [2, 8] geniş
-  olmasına rağmen ortalama küme sayısı yüksek olduğundan CV mütevazı
+- **BAS en stabil** (CV %20.8). Range [2, 8] geniş olmasına rağmen
+  ortalama küme sayısı yüksek olduğundan CV en düşük. MULTI ikinci
+  (CV %22.1) — dört modalitenin concat'i tek modaliteye göre marjinal
+  ek stabilite sağlıyor
 - **RESP en oynak** (CV %34.6, [2, 7] aralığı) — clean cohort'ta RESP
   kümelemesi subject-drop'a en hassas modalite. Phase 13c'de "RESP en
   güvenilir modalite" yorumunu **yumuşatıyor**: RESP subject purity
@@ -188,6 +193,12 @@ cohort için doğru sayıları** taşıyor.
   büyük**. §4 tablosu bu §9 bulgusuyla birlikte okunmalı
 - n=100 hipotez: subject sayısı arttıkça CV düşer beklenir; RESP'in
   görece stabilite kazanması özellikle test edilecek
+
+**Not — sanity check:** Denetim EMG ile MULTI'nin aggregate istatistiklerinin
+tam eşleştiğini (4.76/1.153/0.242) fark etti ve doğrulama istedi. Kolon-kolon
+karşılaştırma sonucu: 50 bootstrap'ın **37'sinde** EMG ile MULTI'nin
+`n_clusters` değeri farklı — aggregate benzerlik rastlantısal, iki modality
+gerçekten bağımsız hesaplanıyor.
 
 **Ne değişiyor:** Phase 13c'deki "cluster stability çok iyi" yorumu
 sadece UMAP-seed dimension'ında geçerli. Cluster count'ların
