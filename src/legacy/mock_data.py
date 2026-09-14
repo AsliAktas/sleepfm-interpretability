@@ -18,7 +18,7 @@ perfect separation or correlation would be scientifically meaningless.
 import numpy as np
 from typing import Dict, Tuple, Optional
 
-from config import DEFAULT_NOISE_CONFIG, EMBEDDING_DIM, MODALITY_DIM_RANGES
+from config import DEFAULT_NOISE_CONFIG, EMBEDDING_DIM, MODALITY_DIM_RANGES, DISEASE_NAMES
 from utils import normalize_l2
 
 _DOMINANT = 2.0
@@ -64,7 +64,7 @@ def generate_mock_embeddings(
     Returns:
         embeddings: np.ndarray of shape (n_samples, embedding_dim), L2-normalized.
         labels: np.ndarray of shape (n_samples,), integer disease group labels.
-            Labels range from 0 to n_disease_groups-1.
+            Labels range from 1 to n_disease_groups (1-based, matching DISEASE_NAMES keys).
             After perturbation, some labels may not match their cluster.
 
     Notes:
@@ -97,12 +97,18 @@ def generate_mock_embeddings(
     n_modalities = len(modality_list)
 
     # --- Step 1: Cluster centers with modality-based dimension weighting ---
-    # Disease groups cycle through dominant modalities (0→eeg, 1→ecg, 2→resp, 3→emg, 4→eeg, …)
+    # Uses _DISEASE_MODALITY_PROFILE (built from _DISEASE_PROFILES) for clinically
+    # motivated dominant/secondary modality assignments when available.
+    # Falls back to round-robin for unknown disease_no values.
+    # Labels are 1-based to match DISEASE_NAMES keys in config.py.
     # Dominant dims: weight 2.0 | Secondary (next modality): 1.0 | Background: 0.3
     centers = np.zeros((n_disease_groups, EMBEDDING_DIM))
-    for g in range(n_disease_groups):
-        dominant_mod = modality_list[g % n_modalities]
-        secondary_mod = modality_list[(g + 1) % n_modalities]
+    for g in range(1, n_disease_groups + 1):
+        if g in _DISEASE_MODALITY_PROFILE:
+            dominant_mod, secondary_mod = _DISEASE_MODALITY_PROFILE[g]
+        else:
+            dominant_mod = modality_list[(g - 1) % n_modalities]
+            secondary_mod = modality_list[g % n_modalities]
         for mod, (start, end) in MODALITY_DIM_RANGES.items():
             if mod == dominant_mod:
                 w = _DOMINANT
@@ -110,37 +116,49 @@ def generate_mock_embeddings(
                 w = _SECONDARY
             else:
                 w = _BACKGROUND
-            centers[g, start:end] = w * rng.standard_normal(end - start)
+            centers[g - 1, start:end] = w * rng.standard_normal(end - start)
 
     # --- Step 2: Assign balanced labels; generate samples around cluster centers ---
-    base_labels = np.tile(np.arange(n_disease_groups), n_samples // n_disease_groups + 1)[:n_samples]
+    # Labels are 1-based: [1, 2, ..., n_disease_groups]
+    base_labels = np.tile(np.arange(1, n_disease_groups + 1), n_samples // n_disease_groups + 1)[:n_samples]
     base_labels = rng.permutation(base_labels)
 
     # Baseline per-dim cluster spread (ensures groups are not perfectly separable)
     _CLUSTER_SPREAD = 0.5
 
     embeddings = np.zeros((n_samples, EMBEDDING_DIM))
-    for g in range(n_disease_groups):
+    for g in range(1, n_disease_groups + 1):
         mask = base_labels == g
         n_in_group = int(mask.sum())
         if n_in_group == 0:
             continue
-        group_emb = np.broadcast_to(centers[g], (n_in_group, EMBEDDING_DIM)).copy()
+        group_emb = np.broadcast_to(centers[g - 1], (n_in_group, EMBEDDING_DIM)).copy()
         for mod, (start, end) in MODALITY_DIM_RANGES.items():
             total_std = _CLUSTER_SPREAD + noise_config.get(mod, 0.0)
             group_emb[:, start:end] += total_std * rng.standard_normal((n_in_group, end - start))
         embeddings[mask] = group_emb
 
-    # --- Step 3: Perturbation — reassign labels, embeddings stay at original cluster ---
-    # "After perturbation, some labels may not match their cluster" (intentional).
+    # --- Step 3: Perturbation — reassign labels AND interpolate embeddings ---
+    # Simulates comorbidity: perturbed patient's embedding is shifted toward
+    # the target cluster center, so both label and embedding reflect the new disease.
+    # Interpolation: emb = alpha * original_emb + (1-alpha) * target_center
+    # alpha=0.5 gives equal weight to original and target (realistic comorbidity).
     final_labels = base_labels.copy()
     n_perturb = int(n_samples * perturbation_rate)
+    _PERTURB_ALPHA = 0.5
     if n_perturb > 0:
         perturb_idxs = rng.choice(n_samples, size=n_perturb, replace=False)
         # Vectorized: draw offset from [1, n_disease_groups-1], shift cyclically.
-        # (orig + offset) % n guarantees a label different from orig, uniformly.
+        # ((label-1 + offset) % n) + 1 guarantees a different label in [1, n], uniformly.
         offsets = rng.integers(1, n_disease_groups, size=n_perturb)
-        final_labels[perturb_idxs] = (final_labels[perturb_idxs] + offsets) % n_disease_groups
+        new_labels = (final_labels[perturb_idxs] - 1 + offsets) % n_disease_groups + 1
+        final_labels[perturb_idxs] = new_labels
+
+        # Interpolate embeddings toward target cluster center
+        for i, idx in enumerate(perturb_idxs):
+            target_label = new_labels[i]
+            target_center = centers[target_label - 1]  # centers is 0-indexed
+            embeddings[idx] = _PERTURB_ALPHA * embeddings[idx] + (1.0 - _PERTURB_ALPHA) * target_center
 
     # --- L2-normalize to unit vectors on hypersphere ---
     embeddings = normalize_l2(embeddings)
@@ -224,13 +242,18 @@ def generate_mock_coxph_scores(
     n_modalities = len(modality_list)
 
     # --- Generate structured weight vectors if not provided ---
-    # Disease d: dominant modality = modality_list[d % 4], secondary = modality_list[(d+1) % 4]
-    # Mirrors cluster center construction in generate_mock_embeddings (Karar 1)
+    # Uses _DISEASE_MODALITY_PROFILE for clinically motivated assignments.
+    # CoxPH weight index d maps to disease_no (d+1) in DISEASE_NAMES.
+    # Falls back to round-robin for unknown disease_no values.
     if weight_vectors is None:
         weight_vectors = np.zeros((n_diseases, embedding_dim))
         for d in range(n_diseases):
-            dominant_mod = modality_list[d % n_modalities]
-            secondary_mod = modality_list[(d + 1) % n_modalities]
+            disease_no = d + 1
+            if disease_no in _DISEASE_MODALITY_PROFILE:
+                dominant_mod, secondary_mod = _DISEASE_MODALITY_PROFILE[disease_no]
+            else:
+                dominant_mod = modality_list[d % n_modalities]
+                secondary_mod = modality_list[(d + 1) % n_modalities]
             for mod, (start, end) in MODALITY_DIM_RANGES.items():
                 if mod == dominant_mod:
                     w = _DOMINANT
@@ -483,6 +506,17 @@ for _d, _dom, _sec in _DISEASE_PROFILES:
             f"Valid: {_valid_modalities}"
         )
 del _profile_names, _valid_modalities, _d, _dom, _sec
+
+# Build lookup: disease_no -> (dominant_modality, secondary_modality)
+# Maps DISEASE_NAMES (config.py) to _DISEASE_PROFILES via disease name matching.
+_PROFILE_BY_NAME: Dict[str, Tuple[str, str]] = {
+    name: (dom, sec) for name, dom, sec in _DISEASE_PROFILES
+}
+_DISEASE_MODALITY_PROFILE: Dict[int, Tuple[str, str]] = {
+    dno: _PROFILE_BY_NAME[dname]
+    for dno, dname in DISEASE_NAMES.items()
+    if dname in _PROFILE_BY_NAME
+}
 
 
 def build_disease_weight_profiles(

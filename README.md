@@ -16,7 +16,7 @@ Proje iki paradigma taşıyor. Aktif olan **gerçek MESA cohort** paradigmasıd�
 | Paradigma | Konum | Durum |
 |---|---|---|
 | **Real MESA cohort** (Phase 13c → Phase 16) | `src/real_embeddings.py`, `src/chunk_level_analysis.py`, `src/rigor_analysis.py`, `src/clinical_bridge_adapter.py` | **Aktif** |
-| Mock disease demo (Nisan 2026, ilk fazlar) | `src/mock_data.py`, `src/similarity_engine.py`, `src/pipeline.py`, `run_ablation_demo.py` | Legacy — metodoloji öğrenme çerçevesi; bilimsel çıkarım için kullanılmaz |
+| Mock disease demo (Nisan 2026, ilk fazlar) | `src/legacy/` (Phase 16s'te izole edildi) | Legacy — metodoloji öğrenme çerçevesi; bilimsel çıkarım için kullanılmaz. Bkz. [`src/legacy/README.md`](src/legacy/README.md) |
 
 Son bilimsel özet: [`reports/phase15_defensibility/README.md`](reports/phase15_defensibility/README.md)
 Pretrain-independence kanıtı: [`reports/pretrain_independence/README.md`](reports/pretrain_independence/README.md)
@@ -67,21 +67,25 @@ NSRR data access (DUA gerekli) ayrıca kurulmalı — bkz.
 
 ```
 sleepfm_interpretability/
-├── src/                              # Analiz modülleri
-│   ├── real_embeddings.py            # (aktif) HDF5 → spherical mean → subject-level table
-│   ├── chunk_level_analysis.py       # (aktif) Chunk-level HDBSCAN + purity
-│   ├── rigor_analysis.py             # (aktif) İstatistiksel rigor katmanı
-│   ├── clinical_analysis.py          # (aktif) UMAP+HDBSCAN + Kruskal-Wallis
-│   ├── clinical_bridge_adapter.py    # (aktif) KNN-proxy → FHIR RiskAssessment
-│   ├── sleep_phases.py               # (aktif) MESA XML parse → sleep-stage aware chunks
-│   ├── mock_data.py                  # (legacy) 500 sentetik hasta, 12 hastalık
-│   ├── similarity_engine.py          # (legacy) KNN Top-5 disease recommendation
-│   └── pipeline.py                   # (legacy) mock end-to-end
+├── src/                              # Aktif analiz modülleri
+│   ├── real_embeddings.py            # HDF5 → spherical mean → subject-level table
+│   ├── chunk_level_analysis.py       # Chunk-level HDBSCAN + purity
+│   ├── rigor_analysis.py             # İstatistiksel rigor katmanı
+│   ├── clinical_analysis.py          # UMAP+HDBSCAN + Kruskal-Wallis
+│   ├── clinical_bridge_adapter.py    # KNN-proxy → FHIR RiskAssessment
+│   ├── sleep_phases.py               # MESA XML parse → sleep-stage aware chunks
+│   ├── paths.py, exceptions.py, utils.py  # Ortak yardımcılar
+│   └── legacy/                       # (legacy) Nisan 2026 mock evren — bkz. src/legacy/README.md
 ├── scripts/
 │   ├── download_nsrr_mesa.py         # NSRR authenticated download (token-file, redaction)
 │   ├── demo_sleepfm_to_fhir.py       # 3-hasta FHIR demo (method demo — klinik değil)
-│   └── verify_cohort_pretrain_independence.py  # Cohort × SleepFM splits cross-check
-├── tests/                            # ~189 test tanımı, 12 dosya
+│   ├── verify_cohort_pretrain_independence.py  # Cohort × SleepFM splits cross-check
+│   ├── run_phase15_analysis.py       # Phase 15 defensibility headline üretici
+│   ├── run_bootstrap_stability.py    # Subject-dropout robustness
+│   └── regen_reproduce_tables.py     # REPRODUCE.md tablolarını CSV'den üretir
+├── tests/
+│   ├── (aktif suite — 12 dosya)
+│   └── legacy/                       # (legacy) mock evren testleri — bkz. tests/legacy/README.md
 ├── reports/
 │   ├── phase15_defensibility/        # En güncel bilimsel özet
 │   ├── phase13c_rigor_clean/         # Clean cohort ilk analizi (Phase 15'te revize)

@@ -26,12 +26,21 @@ class TestResolveCohort:
 
     def test_legacy_fallback_when_env_empty(self, monkeypatch, caplog):
         monkeypatch.delenv("SLEEPFM_COHORT_ROOT", raising=False)
-        with caplog.at_level("WARNING"):
+        monkeypatch.delenv("SLEEPFM_FORBID_LEGACY_FALLBACK", raising=False)
+        with caplog.at_level("ERROR"):
             cohort = resolve_cohort()
         assert "smoke_run" in str(cohort.root).lower()
         assert any("contaminated" in r.message.lower() for r in caplog.records), (
-            "must warn when falling back to contaminated cohort"
+            "must log at ERROR level when falling back to contaminated cohort "
+            "(Phase 16t: escalated from WARNING after silent-fallback bug)"
         )
+
+    def test_strict_env_makes_fallback_raise(self, monkeypatch):
+        monkeypatch.delenv("SLEEPFM_COHORT_ROOT", raising=False)
+        monkeypatch.setenv("SLEEPFM_FORBID_LEGACY_FALLBACK", "1")
+        import pytest
+        with pytest.raises(RuntimeError, match="silent fallback caused a real methodology bug"):
+            resolve_cohort()
 
     def test_metadata_csv_env_overrides_root_layout(self, tmp_path, monkeypatch):
         monkeypatch.setenv("SLEEPFM_COHORT_ROOT", str(tmp_path))

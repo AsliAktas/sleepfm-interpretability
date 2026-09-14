@@ -34,18 +34,30 @@ import pandas as pd
 KNOWN_SPLIT_SHA256 = "57d5019a0d67a1209fe1f8caa4a5f96067dec0725ac7a79e04fe407201a577db"
 
 
-SPLIT_FILE_DEFAULT = Path(
-    "C:/Users/User/Desktop/Projeler/SleepFM/sleepFMoriginal/"
-    "sleepfm-clinical/sleepfm/configs/dataset_split.json"
-)
-COHORT_DIR_DEFAULT = Path(
-    "C:/Users/User/Desktop/Projeler/sleepfm_interpretability/"
-    "data/clean_cohort_run/embeddings"
-)
-REPORT_DIR_DEFAULT = Path(
-    "C:/Users/User/Desktop/Projeler/sleepfm_interpretability/"
-    "reports/pretrain_independence"
-)
+import os
+
+_REPO = Path(__file__).resolve().parents[1]
+
+
+def _resolve_split_file() -> Path:
+    """Locate dataset_split.json from env var or common sibling repo layouts."""
+    env = os.environ.get("SLEEPFM_UPSTREAM_DIR", "").strip()
+    if env:
+        return Path(env) / "sleepfm" / "configs" / "dataset_split.json"
+    for cand in [
+        _REPO.parent / "SleepFM" / "sleepFMoriginal" / "sleepfm-clinical" / "sleepfm" / "configs" / "dataset_split.json",
+        _REPO.parent / "sleepfm-clinical" / "sleepfm" / "configs" / "dataset_split.json",
+    ]:
+        if cand.exists():
+            return cand
+    # Historical default (developer machine)
+    return Path("C:/Users/User/Desktop/Projeler/SleepFM/sleepFMoriginal/"
+                "sleepfm-clinical/sleepfm/configs/dataset_split.json")
+
+
+SPLIT_FILE_DEFAULT = _resolve_split_file()
+COHORT_DIR_DEFAULT = _REPO / "data" / "clean_cohort_run" / "embeddings"
+REPORT_DIR_DEFAULT = _REPO / "reports" / "pretrain_independence"
 
 SUBJECT_RE = re.compile(r"mesa-sleep-(\d{4})")
 

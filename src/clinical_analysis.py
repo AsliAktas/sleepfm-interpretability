@@ -379,9 +379,47 @@ def run(modality_key: str = "BAS", out_dir: Optional[Path] = None) -> ClusterRes
     return result
 
 
-if __name__ == "__main__":
-    for mod in ["BAS", "RESP", "EKG", "EMG", "MULTI"]:
+def _cli() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Run rigor pass across modalities; write reports to --output-dir."
+    )
+    parser.add_argument(
+        "--output-dir", type=Path, default=DEFAULT_REPORT_DIR,
+        help=f"Where to write report_*.md, tests_*.csv, metadata_with_clusters_*.csv "
+             f"(default: {DEFAULT_REPORT_DIR}). For Phase 13c reproducibility use "
+             f"reports/phase13c_rigor_clean.",
+    )
+    parser.add_argument(
+        "--modalities", nargs="+",
+        default=["BAS", "RESP", "EKG", "EMG", "MULTI"],
+        help="Modalities to run (default: all 5).",
+    )
+    parser.add_argument(
+        "--fail-fast", action="store_true",
+        help="Re-raise on first modality failure instead of continuing "
+             "(default: log and continue for backward compatibility).",
+    )
+    args = parser.parse_args()
+
+    failed = []
+    for mod in args.modalities:
         try:
-            run(mod)
+            run(mod, out_dir=args.output_dir)
         except Exception as e:
-            print(f"[{mod}] FAILED: {e}")
+            if args.fail_fast:
+                raise
+            print(f"[{mod}] FAILED: {type(e).__name__}: {e}")
+            failed.append((mod, e))
+
+    if failed:
+        print(f"\n[summary] {len(failed)} of {len(args.modalities)} modalities failed:")
+        for mod, e in failed:
+            print(f"  {mod}: {type(e).__name__}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(_cli())

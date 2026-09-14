@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from mock_data import generate_mock_embeddings
-from config import MODALITY_DIM_RANGES, EMBEDDING_DIM, DEFAULT_NOISE_CONFIG
+from config import MODALITY_DIM_RANGES, EMBEDDING_DIM, DEFAULT_NOISE_CONFIG, DISEASE_NAMES
 
 
 class TestEmbeddingShape:
@@ -68,8 +68,8 @@ class TestClusterStructure:
         """
         embeddings, labels = generate_mock_embeddings(seed=42)
 
-        g0 = embeddings[labels == 0]
-        g1 = embeddings[labels == 1]
+        g0 = embeddings[labels == 1]
+        g1 = embeddings[labels == 2]
 
         # Intra-cluster: pairwise Euclidean distances within group 0
         diff_intra = g0[:, np.newaxis, :] - g0[np.newaxis, :, :]
@@ -102,8 +102,8 @@ class TestClusterStructure:
         ecg_start, ecg_end = MODALITY_DIM_RANGES["ecg"]
         emg_start, emg_end = MODALITY_DIM_RANGES["emg"]
 
-        # Group 1 is ECG-dominant (label % 4 == 1 in the cycling pattern)
-        ecg_group = embeddings[labels == 1]
+        # Group 2 is ECG-dominant ((label-1) % 4 == 1 in the cycling pattern)
+        ecg_group = embeddings[labels == 2]
         mean_abs_ecg = np.abs(ecg_group[:, ecg_start:ecg_end]).mean()
         mean_abs_emg = np.abs(ecg_group[:, emg_start:emg_end]).mean()
 
@@ -111,23 +111,69 @@ class TestClusterStructure:
 
 
 class TestPerturbation:
-    """Verify the intentional misclassification mechanism."""
+    """Verify the intentional misclassification mechanism with embedding interpolation."""
 
     def test_zero_perturbation_rate(self):
         """With perturbation_rate=0, no samples should be reassigned.
 
-        Behavioral contract (intentional): perturbation ONLY reassigns labels;
-        embeddings are fully determined by cluster membership before Step 3.
-        Changing this contract (e.g. moving noise into Step 3) would
-        correctly break this test and require an explicit design decision.
+        Both embeddings and labels should be identical to no-perturbation baseline.
         """
         emb_0, lab_0 = generate_mock_embeddings(perturbation_rate=0.0, seed=42)
         emb_15, lab_15 = generate_mock_embeddings(perturbation_rate=0.15, seed=42)
-        # Behavioral contract: perturbation only reassigns labels,
-        # embeddings are identical regardless of perturbation_rate.
-        np.testing.assert_array_equal(emb_0, emb_15)
         # With rate=0 nothing is reassigned; with rate=0.15 some labels differ
         assert not np.array_equal(lab_0, lab_15)
+
+    def test_perturbation_changes_embeddings(self):
+        """Perturbed samples should have different embeddings from unperturbed baseline.
+
+        HATA #5 fix: perturbation now interpolates embeddings toward target cluster,
+        so embeddings differ between rate=0 and rate>0.
+        """
+        emb_0, lab_0 = generate_mock_embeddings(perturbation_rate=0.0, seed=42)
+        emb_15, lab_15 = generate_mock_embeddings(perturbation_rate=0.15, seed=42)
+        # Perturbed samples should have different embeddings
+        changed_mask = lab_0 != lab_15
+        assert changed_mask.sum() > 0, "No labels changed"
+        # At least some perturbed embeddings should differ
+        assert not np.allclose(emb_0[changed_mask], emb_15[changed_mask], atol=1e-3), (
+            "Perturbed embeddings are unchanged — interpolation not applied"
+        )
+
+    def test_perturbed_embedding_closer_to_target_cluster(self):
+        """Perturbed embedding should be closer to its new label's cluster center
+        than the original (unperturbed) embedding was.
+
+        This verifies the interpolation moves the embedding toward the target.
+        """
+        emb_0, lab_0 = generate_mock_embeddings(perturbation_rate=0.0, seed=42)
+        emb_15, lab_15 = generate_mock_embeddings(perturbation_rate=0.15, seed=42)
+
+        changed_mask = lab_0 != lab_15
+        if changed_mask.sum() == 0:
+            pytest.skip("No perturbation occurred")
+
+        # For each perturbed sample, compute distance to target cluster centroid
+        for new_label in np.unique(lab_15[changed_mask]):
+            # Target cluster centroid from unperturbed data
+            target_members = emb_0[lab_0 == new_label]
+            if len(target_members) < 2:
+                continue
+            centroid = target_members.mean(axis=0)
+
+            # Perturbed samples assigned to this label
+            perturbed_idx = np.where(changed_mask & (lab_15 == new_label))[0]
+            if len(perturbed_idx) == 0:
+                continue
+
+            # Distance of perturbed (interpolated) embedding to target centroid
+            dist_perturbed = np.linalg.norm(emb_15[perturbed_idx] - centroid, axis=1).mean()
+            # Distance of original (unperturbed) embedding to target centroid
+            dist_original = np.linalg.norm(emb_0[perturbed_idx] - centroid, axis=1).mean()
+
+            assert dist_perturbed < dist_original, (
+                f"Label {new_label}: perturbed embedding not closer to target "
+                f"(dist_perturbed={dist_perturbed:.4f} >= dist_original={dist_original:.4f})"
+            )
 
     def test_perturbation_rate_respected(self):
         """Approximately perturbation_rate fraction should be reassigned."""
@@ -139,12 +185,6 @@ class TestPerturbation:
         _, labels_15 = generate_mock_embeddings(
             perturbation_rate=rate, seed=42, n_samples=n_samples
         )
-        # Implementation contract: mock_data.py uses int(n_samples * perturbation_rate)
-        # (Python floor-truncation) to determine the exact perturb count.
-        # This test intentionally locks that contract: if rounding strategy changes
-        # (e.g. round() instead of int()), this test must be updated consciously.
-        # Each perturbed sample gets a new label guaranteed to be different from
-        # its original, so n_changed equals n_perturb exactly.
         n_changed = np.sum(labels_0 != labels_15)
         assert n_changed == int(n_samples * rate)
 
@@ -256,3 +296,37 @@ class TestValidation:
         """Negative noise level in noise_config should raise ValueError."""
         with pytest.raises(ValueError, match="noise_config"):
             generate_mock_embeddings(noise_config={"eeg": -0.1, "ecg": 0.0, "resp": 0.0, "emg": 0.0})
+
+
+class TestLabelDiseaseNameAlignment:
+    """Verify that generated labels align with DISEASE_NAMES keys in config.py.
+
+    HATA #1: mock_data.py used to generate labels 0-11 but DISEASE_NAMES
+    uses keys 1-12. This class ensures labels are always valid DISEASE_NAMES keys.
+    """
+
+    def test_all_labels_are_valid_disease_name_keys(self):
+        """Every label produced by generate_mock_embeddings must be a key in DISEASE_NAMES."""
+        _, labels = generate_mock_embeddings(seed=42, n_disease_groups=12)
+        valid_keys = set(DISEASE_NAMES.keys())
+        actual_labels = set(labels)
+        assert actual_labels.issubset(valid_keys), (
+            f"Labels not in DISEASE_NAMES: {actual_labels - valid_keys}"
+        )
+
+    def test_no_label_zero(self):
+        """Label 0 should never appear (DISEASE_NAMES starts at 1)."""
+        _, labels = generate_mock_embeddings(seed=42, n_disease_groups=12)
+        assert 0 not in labels, "Label 0 found but DISEASE_NAMES starts at 1"
+
+    def test_label_12_exists(self):
+        """Label 12 (Anxiety Disorders) must be present in generated labels."""
+        _, labels = generate_mock_embeddings(seed=42, n_disease_groups=12, perturbation_rate=0.0)
+        assert 12 in labels, "Label 12 (Anxiety Disorders) missing from generated labels"
+
+    def test_labels_range_1_to_n(self):
+        """Labels should range from 1 to n_disease_groups (inclusive)."""
+        n_groups = 12
+        _, labels = generate_mock_embeddings(seed=42, n_disease_groups=n_groups, perturbation_rate=0.0)
+        assert labels.min() == 1
+        assert labels.max() == n_groups

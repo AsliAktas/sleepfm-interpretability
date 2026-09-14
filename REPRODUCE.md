@@ -203,16 +203,13 @@ Kohort yolunu env var ile ayarla, sonra clinical_analysis'i koş:
 $env:SLEEPFM_COHORT_ROOT = "C:/Users/<you>/Desktop/Projeler/sleepfm_interpretability/data/clean_cohort_run"
 $env:SLEEPFM_MESA_XML_DIR = "C:/Users/<you>/Desktop/Projeler/SleepFM/mesa_test_clean"
 
-# Rigor pass (5 modalite)
-cd src
-python clinical_analysis.py
-# Çıktı: ../reports/phase7/ (script default) veya konfigüre edilen DEFAULT_REPORT_DIR
+# Rigor pass (5 modalite) — Phase 13c çıktı klasörüne yaz
+python src/clinical_analysis.py --output-dir reports/phase13c_rigor_clean
 ```
 
-**Not:** clinical_analysis.py'nin `DEFAULT_REPORT_DIR`'ı `reports/phase7`.
-Phase 13c sayılarını üretmek için ya scripti geçici olarak
-`reports/phase13c_rigor_clean` ile koşulur, ya da çıktı üretildikten
-sonra klasör isimlendirilir.
+`--output-dir` argümanı Phase 16r'de eklendi; manuel klasör rename artık
+gerekmiyor. Modality alt-seti için `--modalities BAS EMG` gibi verilebilir;
+`--fail-fast` ile ilk hata anında dur.
 
 **Beklenen headline (Phase 13c)** — committed [`SUMMARY.csv`](reports/phase13c_rigor_clean/SUMMARY.csv)
 ile birebir; bu tablo `scripts/regen_reproduce_tables.py` ile üretildi:
@@ -231,11 +228,15 @@ Chance baseline + cross-modality FWER + bootstrap CI + subject-dropout:
 
 ```powershell
 # Chance baseline label-shuffle + session-shuffle + cross-modality FWER + purity Δ
-python C:/path/to/run_phase15_analysis.py    # scratchpad'te; repoya kopya için scripts/'e taşınabilir
+python scripts/run_phase15_analysis.py
 
 # Subject-dropout robustness (Phase 16 ekleme)
 python scripts/run_bootstrap_stability.py
 ```
+
+Her ikisi de argparse override kabul eder (`--output-dir`,
+`--phase13c-dir`, `--cohort-dir`, `--n-permutations`, `--n-bootstraps`).
+Default'lar committed Phase 15 CSV'lerini birebir üretir.
 
 Beklenen çıktı (`reports/phase15_defensibility/`):
 

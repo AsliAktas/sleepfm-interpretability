@@ -1,13 +1,20 @@
 """
 pytest configuration — workspace root discovery.
 
-Adding this file ensures pytest treats the sleepfm_interpretability directory
-as the root, so `from mock_data import ...` and `from config import ...`
-resolve correctly regardless of where pytest is invoked from.
+Adds three directories to sys.path so imports resolve regardless of where
+pytest is invoked from:
+- workspace root (for cross-cutting imports)
+- src/  (active modules: real_embeddings, rigor_analysis, ...)
+- src/legacy/  (legacy mock evren: mock_data, similarity_engine, ...)
+
+Legacy modules stayed as-is (from mock_data import ...) after being moved
+into src/legacy/ — this sys.path setup keeps the old import syntax working
+without needing to touch dozens of module-level imports.
 """
 import sys
 import os
 
-# Guarantee that the workspace root is on sys.path before any test is collected.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
+sys.path.insert(0, os.path.join(_HERE, "src"))
+sys.path.insert(0, os.path.join(_HERE, "src", "legacy"))

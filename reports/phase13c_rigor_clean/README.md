@@ -47,13 +47,30 @@ Kontamine cohort'ta (Phase 8e/9e) BAS subject purity **0.74** idi. Hipotez:
 
 **#1. Kontamine cohort'un "MULTI-sex Bonferroni geçti" bulgusu KAYBOLDU** (raw p=0.005 → 0.58). Bu **memorization artefaktıydı** — clean cohort'ta sex ile ilişki yok. Öngörüldüğü gibi.
 
-**#2. Clean cohort'ta iki yeni permutation-anlamlı sinyal ortaya çıktı:**
-- **EMG-BMI**: familywise p=0.006 (Bonferroni 0.11'de düşer). Klinik makul — kas tonu ve BMI ilişkili (özellikle chin/leg EMG'de).
-- **MULTI-BMI**: familywise p=0.023. Tutarlı.
+**#2. ~~İki yeni permutation-anlamlı sinyal~~ — Phase 15'te ÇÜRÜTÜLDÜ:**
+Bu bölümde başlangıçta "EMG-BMI familywise p=0.006, MULTI-BMI p=0.023"
+sinyalleri rapor edilmişti. Phase 15'in cross-modality FWER analizi
+(29 test ailesi) sonrası **hiçbiri Bonferroni'yi geçmiyor** (en düşük
+raw p=0.019, Bonferroni sonrası 0.557). MULTI zaten EMG içerdiği için
+çift sayım riski de vardı. Bkz. [`../phase15_defensibility/`
+§3](../phase15_defensibility/README.md).
 
-**#3. Küme stabilitesi çok iyi** (ARI ≥ 0.62 tüm modalitelerde). Clean cohort'ta bile HDBSCAN kararlı — spherical mean + high-dim UMAP fix'i (Phase 10) etkili.
+**#3. Küme stabilitesi çok iyi** (ARI ≥ 0.62 tüm modalitelerde) —
+ama sadece UMAP-init seed varyansı bazında. Phase 16'da subject-dropout
+robustness ölçüldü: cluster count CV %20-35 (whole-pipeline daha
+mütevazı). Bkz. [`../phase15_defensibility/` §9](../phase15_defensibility/README.md).
 
-**#4. Hiçbir Bonferroni-signifikant bulgu yok** — n=20 çok küçük. Permutation ile 2 sinyal var ama replikasyon gerekli.
+**#4. Hiçbir Bonferroni-signifikant bulgu yok** — n=20 çok küçük.
+Permutation sinyalleri de cross-modality FWER sonrası çürüdü;
+sağlam pozitif bulgu YOK, replikasyon (n≥100) şart.
+
+**#5. Kohort seçim biası uyarısı (Phase 16 ekleme):** Bu 20 hasta
+AHI-stratified 5+5+5+5 seçildi. Yani AHI dağılımı **planlı olarak
+zenginleştirildi**. AHI ile modalite embeddings arası ilişki test
+edilirken bu tasarım seçimi circular risk yaratır — "AHI varyansı
+zaten var, dolayısıyla ilişki kolayca bulunur" sanılabilir. Şu ana
+kadar hiçbir sinyal FWER'i geçmediği için pratik risk düşük;
+n=100 clean cohort için random sampling düşünülmelidir.
 
 ## Chunk-Level Karşılaştırma (Kontamine v2 → Clean v3)
 

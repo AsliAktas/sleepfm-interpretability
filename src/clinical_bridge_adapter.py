@@ -144,11 +144,38 @@ def build_risk_payload(
     )
 
 
+def _default_clinical_bridge_dir() -> Path:
+    """Resolve clinical-bridge sibling repo location.
+
+    Precedence: $CLINICAL_BRIDGE_DIR -> ../clinical-bridge-main (sibling of
+    this repo) -> ../clinical-bridge -> ../../clinical-bridge-main. Returns
+    the first candidate that exists, or the env-var value if unset (which
+    then errors loudly if not present at import time).
+    """
+    import os
+    env = os.environ.get("CLINICAL_BRIDGE_DIR", "").strip()
+    if env:
+        return Path(env)
+    here = Path(__file__).resolve().parents[1]  # sleepfm_interpretability/
+    for cand in [
+        here.parent / "clinical-bridge-main",
+        here.parent / "clinical-bridge",
+        here.parent.parent / "clinical-bridge-main",
+    ]:
+        if cand.exists():
+            return cand
+    # Last-resort fallback — matches historical default so nothing breaks
+    # for the original developer; other machines should set $CLINICAL_BRIDGE_DIR.
+    return here.parent / "clinical-bridge-main"
+
+
 def translate_to_fhir(
     payload: RiskPayload,
-    clinical_bridge_dir: Path = Path("C:/Users/User/Desktop/Projeler/clinical-bridge-main"),
+    clinical_bridge_dir: Optional[Path] = None,
     attach_neighbours: bool = True,
 ) -> Dict:
+    if clinical_bridge_dir is None:
+        clinical_bridge_dir = _default_clinical_bridge_dir()
     """Call the clinical-bridge adapter and (optionally) attach neighbour
     references as a custom extension to the returned RiskAssessment.
 

@@ -27,6 +27,21 @@ chance daha yüksek. Empirik olarak ölçtüm (500-iter label-shuffle):
   gerçekten var, sadece BAS'a özel değil — ham SleepFM embedding **her
   modalitede** subject-discrimination yapıyor
 
+**⚠️ p-value tavan uyarısı:** Her modalitede p=0.002 aynı çıkması tesadüf
+değil. Phipson-Smyth `(count+1)/(n+1)` bound'u 500 permutation için
+`1/501 ≈ 0.001996` alt sınırı verir; yani "hiçbir permutation observed'i
+geçmedi" durumunun raporlanabilir minimum p'sidir. Gerçek p bunun çok
+daha altında olabilir; bu ölçüm sadece "≤ 0.002" der. Daha keskin bir
+alt sınır için `n_permutations` 5000-10000'e çıkarılmalı — n=100 kohortta
+planlanacak.
+
+**⚠️ Kohort-bağımlılık uyarısı:** null_mean (~0.11) bu n=20 kohort ve
+bu HDBSCAN küme boyut dağılımı için. Farklı bir kohortun null_mean'iyle
+doğrudan karşılaştırılabilir değil — küme sayısı ve boyutları değişirse
+label-shuffle chance seviyesi de değişir. Cross-cohort karşılaştırma
+için subject-count-normalized purity gibi bir standardize edilmiş metrik
+gerekir.
+
 ### 2. Session-shuffle null — biometric hipotezi TEST edildi
 
 Audit dedi ki "gözlenen purity biometric ID mi yoksa session artifact mı?
@@ -89,6 +104,15 @@ CI'nin içinde yok. §9'daki bootstrap_stability subject-dropout ölçümü
 gösterir ki whole-pipeline belirsizliği daha büyük (cluster count CV
 %20-35). "Küme yapısı stabil" iddiası bu ayrımla okunmalı: **UMAP-seed
 dimension'ında stabil, subject-dropout dimension'ında mütevazı**.
+
+**⚠️ Bağımlılık kaveati:** 10 seed × 45 pair = 90.000 bootstrap sample
+teoride bol; ancak 45 pair aynı 10 seed'in tüm ikili kombinasyonları,
+yani birbirinden **bağımsız değil**. Klasik bootstrap CI bağımsız
+gözlem varsayar; bağımlı-veri durumunda CI olduğundan **daha dar
+raporlar** (optimist). Gerçek "cluster stability under random UMAP
+init" varyansı bu tablodakinin biraz üstünde olması muhtemel; ama
+büyüklük mertebesi (±0.05-0.10) korunur. Kesin uncertainty için
+seed-level jackknife veya subject-level bootstrap gerekir.
 
 ### 5. Kontamine vs Clean karşılaştırma — daha ölçülü Δ
 
