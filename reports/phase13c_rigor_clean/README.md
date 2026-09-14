@@ -31,7 +31,7 @@ Kontamine cohort'ta (Phase 8e/9e) BAS subject purity **0.74** idi. Hipotez:
 - **Kısmen memorization vardı** (0.74 → 0.62, 16 puan düşüş)
 - **Ama büyük kısmı gerçek EEG hasta-imzası** — clean cohort'ta bile HDBSCAN kümeleri %62 tek-hasta ağırlıklı
 
-Yani SleepFM'in kontrastif pretraining objective'i, EEG'nin doğal yüksek inter-subject varyansını **öğrenmesi bekleniyor bir özellik**. Bu ne bir bug ne memorization; embedding'in **biometric ID gibi de davranması** anlamına geliyor.
+**Uyarı (Phase 15 revize):** Yukarıdaki "memorization + gerçek EEG hasta-imzası karışım" yorumu bir hipotezdir; kohortta doğrulanmış değildir. Session-shuffle null testi bu ayrımı yapamaz (tek gecelik veriyle imkânsız). Bir sonraki cümlede "biometric ID gibi davranması" ifadesi de kanıtlanmamış hipotez seviyesindedir — inter-session reproducibility veya matched-pair kohort gerekir. Ayrıntı: [`../phase15_defensibility/README.md`](../phase15_defensibility/README.md) §2.
 
 ## Rigor Pass Karşılaştırması (Contaminated v2 → Clean v3)
 
@@ -66,7 +66,7 @@ Yani SleepFM'in kontrastif pretraining objective'i, EEG'nin doğal yüksek inter
 
 ### Chunk-Level Bulgular
 
-- **BAS stage ARI 0.0003 → 0.042** — clean cohort'ta zayıf stage-signal görünüyor (100× artış, ama hâlâ küçük). Kontamine'de memorization stage yapısını maskeliyordu.
+- **BAS stage ARI 0.0003 → 0.042** — clean cohort'ta ARI mutlak değeri hâlâ rastgeleye (ARI=0) yakın; "100× artış" ifadesi baz sıfıra yakın olduğu için yanıltıcı olabilir. Sinyalin var olduğunu iddia etmek için Bonferroni-anlamlı bir p değeri gerekir; şu anki farkın istatistiksel anlamlılığı test edilmedi.
 - **RESP subject purity stabil (0.37 → 0.36)** — RESP embeddings **cohorttan bağımsız global yapı** yakalıyor. Klinik yorumlanabilirlik için en güvenilir modalite.
 - **EMG subject purity yükseldi (0.48 → 0.71)** — clean cohort'ta EMG kümeler daha subject-specific. EMG sensor placement varyansı yüksek olabilir.
 
