@@ -38,9 +38,10 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _LEGACY_ROOT = _PROJECT_ROOT / "data" / "smoke_run"
 
 # Legacy hardcoded developer-machine paths. Only used when the caller passes
-# no explicit path AND no env var is set — in which case a WARNING is logged
-# by resolve_cohort. New machines should set $SLEEPFM_MESA_XML_DIR and
-# $SLEEPFM_METADATA_CSV (see .env.example) rather than relying on these.
+# no explicit path AND no env var is set — in which case an ERROR is logged
+# by resolve_cohort (or RuntimeError raised if $SLEEPFM_FORBID_LEGACY_FALLBACK=1).
+# New machines should set $SLEEPFM_MESA_XML_DIR and $SLEEPFM_METADATA_CSV
+# (see .env.example) rather than relying on these.
 _LEGACY_MESA_XML = Path(os.environ.get(
     "SLEEPFM_MESA_XML_DIR_LEGACY",
     "C:/Users/User/Desktop/Projeler/SleepFM/mesa",
