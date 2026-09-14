@@ -174,8 +174,6 @@ def translate_to_fhir(
     clinical_bridge_dir: Optional[Path] = None,
     attach_neighbours: bool = True,
 ) -> Dict:
-    if clinical_bridge_dir is None:
-        clinical_bridge_dir = _default_clinical_bridge_dir()
     """Call the clinical-bridge adapter and (optionally) attach neighbour
     references as a custom extension to the returned RiskAssessment.
 
@@ -186,6 +184,8 @@ def translate_to_fhir(
     afterwards — a whitelist would silently miss any new top-level module
     the sibling project adds later (audit finding 3).
     """
+    if clinical_bridge_dir is None:
+        clinical_bridge_dir = _default_clinical_bridge_dir()
     import sys
     cb_str = str(clinical_bridge_dir)
     orig_path = list(sys.path)

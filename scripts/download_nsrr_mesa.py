@@ -139,18 +139,27 @@ def _read_token_file(path: Path) -> str:
 
 
 def resolve_token(args: argparse.Namespace) -> str:
-    """Locate a token from the allowed sources. Never from argv directly."""
+    """Locate a token from the allowed sources. Never from argv directly.
+
+    Precedence: --prompt-token > --token-file > $NSRR_TOKEN_FILE > $NSRR_TOKEN.
+    $NSRR_TOKEN_FILE is preferred over $NSRR_TOKEN because it keeps the
+    secret on disk (chmod 600) rather than in process environment.
+    """
     if args.prompt_token:
         return getpass.getpass("NSRR token: ").strip()
     if args.token_file:
         return _read_token_file(Path(args.token_file).expanduser())
+    env_token_file = os.environ.get("NSRR_TOKEN_FILE", "").strip()
+    if env_token_file:
+        return _read_token_file(Path(env_token_file).expanduser())
     token = os.environ.get("NSRR_TOKEN", "").strip()
     if not token:
         raise SystemExit(
             "[error] no token found. Provide one via:\n"
             "  --prompt-token             (interactive)\n"
             "  --token-file <path>        (file, chmod 600)\n"
-            "  $env:NSRR_TOKEN='...'      (env var)\n"
+            "  $env:NSRR_TOKEN_FILE=<path>  (env var pointing to token file)\n"
+            "  $env:NSRR_TOKEN='...'      (env var with raw token)\n"
             "Get a token: https://sleepdata.org/token"
         )
     return token

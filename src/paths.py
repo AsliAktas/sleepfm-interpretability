@@ -18,8 +18,10 @@ env-var change:
 Callers must pass the resolved paths explicitly to the loader functions;
 the loaders no longer have magic defaults pointing at a specific cohort.
 Legacy fallbacks (unset env var) point at the contaminated smoke_run so
-existing scripts do not break on this refactor, but a WARNING is emitted
-so the choice is loud in every run.
+existing scripts do not break on this refactor. Phase 16t escalated the
+fallback log level from WARNING to ERROR — Phase 16g had a real bug where
+silent fallback caused bootstrap_stability to run on the wrong cohort.
+For hard failure instead of fallback, set SLEEPFM_FORBID_LEGACY_FALLBACK=1.
 """
 
 from __future__ import annotations
@@ -78,9 +80,10 @@ def resolve_cohort(
     """Return a CohortPaths for the requested layout.
 
     Precedence (highest first): explicit arg -> env var -> legacy fallback
-    (with a warning). Callers that want deterministic behaviour should
-    always pass `root` explicitly; the env-var and legacy paths exist for
-    convenience in scripts and are noisy on purpose.
+    (logged at ERROR level; raises RuntimeError instead if
+    $SLEEPFM_FORBID_LEGACY_FALLBACK=1). Callers that want deterministic
+    behaviour should always pass `root` explicitly; the env-var and legacy
+    paths exist for convenience in scripts and are noisy on purpose.
     """
     env_root = os.environ.get(_COHORT_ENV, "").strip()
     env_metadata = os.environ.get(_METADATA_ENV, "").strip()
