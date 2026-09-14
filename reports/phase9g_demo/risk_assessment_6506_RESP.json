@@ -4,7 +4,7 @@
   "subject": {
     "reference": "Patient/REDACTED"
   },
-  "occurrenceDateTime": "2026-09-10T21:41:19Z",
+  "occurrenceDateTime": "2026-09-11T18:12:20Z",
   "method": {
     "coding": [
       {
@@ -20,12 +20,12 @@
         "coding": [
           {
             "system": "http://snomed.info/sct",
-            "code": "71908006",
-            "display": "Atrial fibrillation (disorder)"
+            "code": "78275009",
+            "display": "Obstructive sleep apnea syndrome (disorder)"
           }
         ]
       },
-      "probabilityDecimal": 0.41628470723684613,
+      "probabilityDecimal": 47.247317347472325,
       "qualitativeRisk": {
         "coding": [
           {
@@ -50,11 +50,11 @@
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9626531600952148
+              "valueDecimal": 0.9839596748352051
             },
             {
               "url": "ahi",
-              "valueDecimal": 2.7014218009
+              "valueDecimal": 7.115902965
             }
           ]
         },
@@ -67,11 +67,11 @@
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9619230031967163
+              "valueDecimal": 0.9730983972549438
             },
             {
               "url": "ahi",
-              "valueDecimal": 8.3422459893
+              "valueDecimal": 16.085790885
             }
           ]
         },
@@ -84,11 +84,11 @@
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.956453800201416
+              "valueDecimal": 0.9711775779724121
             },
             {
               "url": "ahi",
-              "valueDecimal": 10.0
+              "valueDecimal": 20.517241379
             }
           ]
         },
@@ -101,11 +101,11 @@
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9560993313789368
+              "valueDecimal": 0.9702993631362915
             },
             {
               "url": "ahi",
-              "valueDecimal": 23.410852713
+              "valueDecimal": 5.4915254237
             }
           ]
         },
@@ -118,11 +118,11 @@
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9462721943855286
+              "valueDecimal": 0.9698902368545532
             },
             {
               "url": "ahi",
-              "valueDecimal": 18.139534884
+              "valueDecimal": 21.751824818
             }
           ]
         }

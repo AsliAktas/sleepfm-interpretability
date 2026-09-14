@@ -30,18 +30,31 @@
   klinik risk sıralaması geçerli değildir
 - Ayrıntı: [`../phase15_defensibility/README.md`](../phase15_defensibility/README.md) §6
 
-## Eski SNOMED Kodu Uyarısı
+## SNOMED Coding Geçmişi
 
-Bu JSON'lar Phase 9g döneminde üretildi ve `outcome.coding` altında
-**71908006 (Atrial fibrillation)** SNOMED kodu içerir. Bu Phase 15'te
-yanlış tanı grubu olarak tespit edildi ve `clinical_bridge_adapter.py`
-içindeki DEFAULT_CONDITION **Obstructive Sleep Apnea** (78275009) olarak
-düzeltildi (bkz. `clinical-bridge` repo, commit `6139efb`).
+Phase 9g'de üretilen JSON'lar `outcome.coding` altında **71908006
+(Atrial fibrillation)** taşıyordu. Bu Phase 15'te semantik yanlış
+olarak tespit edildi (AHI-based risk ≠ AFib) ve
+`clinical_bridge_adapter.py` içindeki DEFAULT_CONDITION **Obstructive
+Sleep Apnea** (78275009) olarak düzeltildi (`clinical-bridge` repo,
+commit `6139efb`).
 
-Bu klasördeki JSON'lar **eski SNOMED ile bırakıldı** çünkü:
-- Ne zaman üretildiklerinin tarihsel kaydı olarak değerliler
-- Regenerate etmek yeni Phase (16+) kapsamında yapılmalı, method-demo
-  değil
+**Phase 16'da** bu klasördeki tüm MULTI JSON'lar düzeltilmiş adapter
+ile regenerate edildi ve şu an **hiçbir dosya AFib kodu içermiyor**.
+Eski `risk_assessment_REDACTED_MULTI.json` (kontamine smoke_run kohortundan
+kalıntı) silindi.
 
-Yeni demo üretmek için `scripts/demo_sleepfm_to_fhir.py` düzeltilmiş
-adapter ile koşulur; çıktı doğru SNOMED kodunu içerir.
+## Mevcut Dosyalar (Phase 16 sonrası)
+
+| Dosya | Modalite | Query subject | SNOMED |
+|---|---|---|---|
+| `risk_assessment_REDACTED_MULTI.json` | MULTI (512-dim) | REDACTED | 78275009 (OSA) |
+| `risk_assessment_REDACTED_MULTI.json` | MULTI | REDACTED | 78275009 (OSA) |
+| `risk_assessment_REDACTED_MULTI.json` | MULTI | REDACTED | 78275009 (OSA) |
+| `risk_assessment_REDACTED_MULTI.json` | MULTI | REDACTED | 78275009 (OSA) |
+| `risk_assessment_REDACTED_RESP.json` | RESP-only | REDACTED | 78275009 (OSA) |
+| `risk_assessment_REDACTED_RESP.json` | RESP | REDACTED | 78275009 (OSA) |
+| `risk_assessment_REDACTED_RESP.json` | RESP | REDACTED | 78275009 (OSA) |
+
+Yeniden üretim: `python scripts/demo_sleepfm_to_fhir.py --modality
+MULTI --query-subject <ID> --cohort-root data/clean_cohort_run`

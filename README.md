@@ -1,5 +1,7 @@
 # SleepFM Interpretability
 
+[![tests](https://github.com/AsliAktas/sleepfm_interpretability/actions/workflows/tests.yml/badge.svg)](https://github.com/AsliAktas/sleepfm_interpretability/actions/workflows/tests.yml)
+
 SleepFM foundation model'inin embedding uzayının **klinik veriyle**
 denetlenebilir analizi. Gerçek MESA PSG kayıtları → SleepFM embeddings →
 istatistiksel rigor pass (chance baselines, cross-modality FWER, bootstrap

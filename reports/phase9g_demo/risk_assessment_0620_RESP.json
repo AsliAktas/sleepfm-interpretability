@@ -1,0 +1,132 @@
+{
+  "resourceType": "RiskAssessment",
+  "status": "final",
+  "subject": {
+    "reference": "Patient/REDACTED"
+  },
+  "occurrenceDateTime": "2026-09-11T18:12:22Z",
+  "method": {
+    "coding": [
+      {
+        "system": "http://custom.ai/models",
+        "code": "sleepfm-clinical-v1",
+        "display": "SleepFM Clinical Risk Prediction Model v1"
+      }
+    ]
+  },
+  "prediction": [
+    {
+      "outcome": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "78275009",
+            "display": "Obstructive sleep apnea syndrome (disorder)"
+          }
+        ]
+      },
+      "probabilityDecimal": 48.4816445761906,
+      "qualitativeRisk": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+            "code": "low",
+            "display": "Low likelihood"
+          }
+        ]
+      }
+    }
+  ],
+  "extension": [
+    {
+      "url": "http://sleepfm-interpretability/similar-patients",
+      "extension": [
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9894832968711853
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 23.2
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9873636364936829
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 3.4328358209
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9871989488601685
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 0.0
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9871574640274048
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 16.085790885
+            }
+          ]
+        },
+        {
+          "url": "neighbour",
+          "extension": [
+            {
+              "url": "subject_id",
+              "valueString": "REDACTED"
+            },
+            {
+              "url": "cosine_similarity",
+              "valueDecimal": 0.9862874746322632
+            },
+            {
+              "url": "ahi",
+              "valueDecimal": 41.617647059
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
