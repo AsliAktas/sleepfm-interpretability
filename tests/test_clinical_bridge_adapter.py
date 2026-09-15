@@ -21,7 +21,12 @@ from clinical_bridge_adapter import (
 )
 
 
-CLINICAL_BRIDGE_DIR = Path("C:/Users/User/Desktop/Projeler/clinical-bridge-main")
+import os
+
+CLINICAL_BRIDGE_DIR = Path(os.environ.get(
+    "CLINICAL_BRIDGE_DIR",
+    "/nonexistent/set-CLINICAL_BRIDGE_DIR-env-var",
+))
 
 
 class TestCosineSimilarity:

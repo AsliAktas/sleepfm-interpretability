@@ -8,9 +8,12 @@ pandas==2.0.3
 scipy==1.11.3
 h5py==3.11.0
 
-# ML / Survival Analysis
+# ML / Survival Analysis / Statistical Hypothesis Testing
 scikit-learn==1.3.2
 lifelines==0.28.0
+# statsmodels is used as an oracle in tests/test_rigor_analysis.py to
+# validate the in-house BH-FDR implementation against statsmodels' own.
+statsmodels==0.14.0
 
 # Deep Learning (model reading and forward pass)
 torch==2.1.2

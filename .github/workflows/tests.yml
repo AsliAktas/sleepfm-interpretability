@@ -16,28 +16,51 @@ jobs:
   dua-hygiene:
     name: DAUA compliance grep-gate
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Grep for real MESA subject IDs (Phase 13c clean cohort)
-        # NSRR DAUA §5 — no real MESA subject IDs may live in tracked source.
-        # Pattern is base64-encoded so git-filter-repo replace-text passes
-        # over it without destroying the check (the pattern itself is not a
-        # cleartext ID string).
+      - name: Grep — no non-synthetic mesa-sleep-XXXX
+        # NSRR DAUA §5 — the mesa-sleep-XXXX prefix is the standard way
+        # MESA subject IDs appear in file names, HDF5 keys, code comments,
+        # and reports. Only the synthetic 9xxx range (test fixtures) and
+        # the sole 5-digit demo (12345) are allowed.
         run: |
           set +e
-          IDS=$(echo 'MDA1NnwwNjIwfDE0NzB8MjEwNXwyMzY4fDI0NDN8MjUwN3wzMDczfDMzNTJ8MzQ5NXwzOTI1fDQwODV8NDEyOXw0MjI3fDUwMTd8NTUzMnw1ODA1fDU4MDZ8NjI4Nnw2MzE2fDY1MDY=' | base64 -d)
+          matches=$(git ls-files | while read f; do
+            grep -HnoE 'mesa-sleep-[0-9]{4,5}' "$f" 2>/dev/null
+          done | grep -vE 'mesa-sleep-9[0-9]{3}|mesa-sleep-12345')
+          if [ -n "$matches" ]; then
+            echo "❌ Non-synthetic mesa-sleep-XXXX ID found in tracked files:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "✅ No mesa-sleep-XXXX leak"
+
+      - name: Grep — bare MESA IDs via GitHub Actions secret
+        # Pattern of real MESA IDs is stored as the MESA_ID_PATTERN repo
+        # secret rather than in tracked source (which would itself be a
+        # DAUA §5 disclosure). If the secret is not configured this step
+        # no-ops — the mesa-sleep-XXXX prefix check above is the primary
+        # gate; this is defence in depth.
+        env:
+          IDS: ${{ secrets.MESA_ID_PATTERN }}
+        run: |
+          set +e
+          if [ -z "$IDS" ]; then
+            echo "ℹ️  MESA_ID_PATTERN secret not configured; skipping bare-ID check"
+            exit 0
+          fi
           matches=$(git ls-files | while read f; do
             grep -HnoE "\b($IDS)\b" "$f" 2>/dev/null
           done)
           if [ -n "$matches" ]; then
-            echo "❌ DAUA violation — real MESA subject IDs found in tracked files:"
+            echo "❌ Bare MESA ID found in tracked files:"
             echo "$matches"
             exit 1
           fi
-          echo "✅ No real MESA subject IDs in tracked files"
+          echo "✅ No bare MESA ID leaks"
 
       - name: Confirm DEFAULT_SUBJECTS is empty
         run: |
@@ -48,11 +71,44 @@ jobs:
           print('✅ DEFAULT_SUBJECTS is empty')
           "
 
+  pretrain-independence:
+    name: Pretrain-independence CSV assertion
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas==2.1.4
+
+      - name: Verify committed CSV shows pretrain overlap = 0
+        # If Phase 15's memorization argument is to stand, the committed
+        # pretrain_independence CSV must show zero overlap with SleepFM's
+        # pretrain split. This is a static check on the file; the actual
+        # SHA-pinned verify_cohort_pretrain_independence.py must be re-run
+        # locally whenever the cohort or upstream split changes.
+        run: |
+          python -c "
+          import pandas as pd
+          df = pd.read_csv('reports/pretrain_independence/clean_cohort_n20_vs_sleepfm_splits.csv')
+          pretrain_row = df[df['split'] == 'pretrain']
+          assert len(pretrain_row) == 1, 'expected exactly one pretrain row'
+          overlap = int(pretrain_row['overlap_count'].iloc[0])
+          assert overlap == 0, f'pretrain overlap must be 0, got {overlap}'
+          print(f'✅ pretrain overlap = 0 (SHA-pinned split, static check)')
+          "
+
   pytest:
     name: pytest (Python 3.10)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: dua-hygiene  # only run tests once DAUA gate is green
+    needs: [dua-hygiene, pretrain-independence]  # gate on both
 
     steps:
       - name: Checkout

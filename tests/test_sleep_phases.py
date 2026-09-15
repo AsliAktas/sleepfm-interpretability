@@ -23,7 +23,12 @@ from sleep_phases import (
 )
 
 
-MESA_XML_ROOT = Path("C:/Users/User/Desktop/Projeler/SleepFM/mesa")
+import os
+
+MESA_XML_ROOT = Path(os.environ.get(
+    "SLEEPFM_MESA_XML_DIR",
+    "/nonexistent/set-SLEEPFM_MESA_XML_DIR-env-var",
+))
 REAL_MESA_XML = MESA_XML_ROOT / "mesa-sleep-9001-nsrr.xml"
 
 

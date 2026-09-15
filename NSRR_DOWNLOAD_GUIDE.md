@@ -1,8 +1,16 @@
-# Temiz Cohort İndirme Rehberi (Phase 8b)
+# NSRR MESA Cohort İndirme Rehberi
+
+Bu rehber DUA imzalayan kullanıcının SleepFM `test` split'inden pretrain-
+independent cohort'u indirmesi içindir. Phase 13c'de n=20 için kullanıldı;
+Phase 17 planına göre n=100 için de aynı akış geçerlidir. Subject listesi
+DAUA §5 gereği `data/private/subject_lists/` altında lokal olarak yaşar
+ve bu belgede listelenmez — bkz. [REPRODUCE.md §4](REPRODUCE.md).
 
 ## Neden
 
-Mevcut 20 MESA hastası kontamine (17'si SleepFM pretrain'inde). Test split'ten yeni bir cohort indirilmesi gerekiyor.
+SleepFM pretrain'de görülmüş subject'ler üzerinde analiz yapmak
+memorization ile fizyolojik sinyali karıştırır. Test split'ten kohort
+çekmek bu tuzağı ortadan kaldırır (bkz. [reports/pretrain_independence/](reports/pretrain_independence/README.md)).
 
 ## Önerilen 20 Hasta
 

@@ -74,7 +74,7 @@ sleepfm_interpretability/
 │   ├── clinical_analysis.py          # UMAP+HDBSCAN + Kruskal-Wallis
 │   ├── clinical_bridge_adapter.py    # KNN-proxy → FHIR RiskAssessment
 │   ├── sleep_phases.py               # MESA XML parse → sleep-stage aware chunks
-│   ├── paths.py, exceptions.py, utils.py  # Ortak yardımcılar
+│   ├── paths.py, utils.py            # Ortak yardımcılar
 │   └── legacy/                       # (legacy) Nisan 2026 mock evren — bkz. src/legacy/README.md
 ├── scripts/
 │   ├── download_nsrr_mesa.py         # NSRR authenticated download (token-file, redaction)
@@ -106,11 +106,13 @@ sleepfm_interpretability/
 python -m pytest tests/ -v
 ```
 
-12 dosya, **193 test** (`pytest.parametrize` sonrası tam sayı; grep ile
-`def test_` sayarsanız 189 görürsünüz — 4 parametrized case fazlası). En
-son çalıştırma: **193/193 passed** (Phase 16, `sleepfm` conda env, 125 sn).
-rigor katmanı için 36 test, NSRR download script'i için 21 test (magic
-byte, redaction, atomic rename).
+12 dosya, **194 test** (parametrize sonrası; grep ile `def test_`
+sayarsanız 190 görürsünüz — 4 parametrized case fazlası). En son
+Phase 20 koşumu: **191 passed + 3 skipped** (skipped = real-MESA-XML
+integration testleri, DAUA gereği synthetic path'e çevrildiğinden CI
++ fresh clone'da graceful skip). rigor katmanı için 36 test, NSRR
+download script'i için 25 test (magic byte, redaction, atomic rename,
+token precedence).
 
 ---
 
@@ -119,7 +121,8 @@ byte, redaction, atomic rename).
 Repodaki hiçbir çıktı klinik karar için kullanılamaz. FHIR RiskAssessment
 JSON'ları **method demo**dur: KNN-proxy risk skoru, foundation model
 çıktısı değil. n=20 kohort istatistiksel güç sağlamaz. Ayrıntı için
-[`SONUC_ANALIZI.md`](SONUC_ANALIZI.md).
+[`reports/phase15_defensibility/README.md`](reports/phase15_defensibility/README.md)
+§6 (RESP-only demo) ve [`reports/phase9g_demo/README.md`](reports/phase9g_demo/README.md).
 
 ---
 

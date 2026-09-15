@@ -389,12 +389,11 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     import os as _os
-    _default_out = _os.environ.get(
-        "NSRR_DOWNLOAD_OUT",
-        "C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean",
+    _default_out = _os.environ.get("NSRR_DOWNLOAD_OUT")
+    parser.add_argument(
+        "--out", default=_default_out, type=Path, required=(_default_out is None),
+        help="Output directory. Required unless $NSRR_DOWNLOAD_OUT is set.",
     )
-    parser.add_argument("--out", default=_default_out, type=Path,
-                        help="Output directory (env: $NSRR_DOWNLOAD_OUT)")
     parser.add_argument("--subjects", nargs="+", default=list(DEFAULT_SUBJECTS),
                         help="Subject IDs (any zero-padding accepted)")
     parser.add_argument("--parallel", type=int, default=3,
