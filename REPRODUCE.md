@@ -90,28 +90,43 @@ icacls C:\Users\<you>\.nsrr\token /inheritance:r /grant:r "$($env:USERNAME):F"
 
 ## 4. Clean Cohort — 20 Subject
 
-Phase 13 sonuçlarını üretmek için tam olarak şu 20 hasta gerekli
-(SleepFM'in resmi `test` split'inden, AHI-stratified, `random_state=42`):
+Phase 13 sonuçlarını üretmek için 20 hasta gerekli (SleepFM'in resmi
+`test` split'inden, AHI-stratified, `random_state=42`; 5 normal + 5 mild
++ 5 moderate + 5 severe).
 
-| Kategori | AHI | Subject IDs |
-|---|---|---|
-| Normal | <5 | [REDACTED_LIST_PER_DUA] |
-| Mild | 5-15 | [REDACTED_LIST_PER_DUA] |
-| Moderate | 15-30 | [REDACTED_LIST_PER_DUA] |
-| Severe | >30 | [REDACTED_LIST_PER_DUA] |
+**Subject IDs NSRR DAUA Bölüm 5 gereği bu belgede listelenmiyor.** DUA
+imzalayan kullanıcı için:
+- Listenin lokal kopyası: `data/private/subject_lists/n20_clean_cohort_full.csv` (git-ignored)
+- Yeniden üretim reçetesi:
 
-Pretrain-independence doğrulaması: bu 20 ID SleepFM `dataset_split.json`
+```python
+# NSRR DAUA imzalı kullanıcı için — deterministic seçim
+import json, random, re
+SPLIT = json.load(open("<upstream>/sleepfm/configs/dataset_split.json"))
+test_ids = sorted({re.search(r"mesa-sleep-(\d{4})", x).group(1)
+                   for x in SPLIT["test"] if re.search(r"mesa-sleep-(\d{4})", x)})
+# AHI-stratified sample of test_ids (metadata CSV'den AHI çekilir,
+# 4 kategoride 5+5+5+5 hasta random.Random(42).sample ile)
+# Fiili liste: data/private/subject_lists/n20_clean_cohort_full.csv
+```
+
+Pretrain-independence doğrulaması: 20 ID SleepFM `dataset_split.json`
 altında **pretrain'de 0, test'te 20/20** overlap — bkz.
 [`reports/pretrain_independence/`](reports/pretrain_independence/README.md).
 
 İndir:
 
 ```powershell
+# DUA imzalı kullanıcı — private listeden oku
+$ids = (Get-Content data/private/subject_lists/n20_clean_cohort_full.csv |
+        Select-Object -Skip 1 |
+        ForEach-Object { ($_ -split ',')[5] } |
+        Where-Object { $_ } |
+        ForEach-Object { $_ -split ',' } | Where-Object { $_ -match '^\d{4}$' }) -join ' '
 python scripts/download_nsrr_mesa.py `
   --token-file C:\Users\<you>\.nsrr\token `
   --out C:\Users\<you>\Desktop\Projeler\SleepFM\mesa_test_clean `
-  --subjects [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA]
+  --subjects $ids.Split()
 ```
 
 Beklenen çıktı:

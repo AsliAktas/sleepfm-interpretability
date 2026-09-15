@@ -23,8 +23,11 @@ env/
 .ipynb_checkpoints/
 
 # Data (do not commit large files or sensitive data)
+# NSRR DAUA compliance — no MESA-derived data in git
 data/raw/
 data/processed/
+data/private/
+data/n100_cohort_run/
 
 # Large binary outputs from Phase 6+ pipeline runs (preprocessed HDF5 + inference embeddings)
 data/smoke_run/

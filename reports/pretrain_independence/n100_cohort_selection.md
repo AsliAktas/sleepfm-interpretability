@@ -37,32 +37,40 @@ data/n100_cohort_run/embeddings` (indirme sonrası koşulacak).
 | Full analysis (rigor pass + defensibility) | ~10-15 dk |
 | **Toplam wall-clock** | **~2 saat** |
 
-## Subject IDs (100)
+## Subject IDs — Kayıt Yeri (NSRR DAUA Uyum)
 
-### Mevcut 20 (Phase 13c'den, preprocess'li)
-```
-[REDACTED_LIST_PER_DUA]
+NSRR Data Access and Use Agreement Bölüm 5 gereği per-subject ID listeleri
+public repository'de yayınlanmıyor. Reproducibility için:
+
+- **Deterministic seçim reçetesi** aşağıda; herhangi biri aynı split dosyası
+  + aynı seed ile aynı listeyi yeniden üretebilir
+- Fiili listeler `data/private/subject_lists/` altında (git-ignored, sadece
+  DUA imzalayan kullanıcının makinesinde)
+
+**Reçete:**
+
+```python
+import json, random, re
+SPLIT = json.load(open("sleepfm-clinical/sleepfm/configs/dataset_split.json"))
+test_ids = sorted({re.search(r"mesa-sleep-(\d{4})", x).group(1)
+                   for x in SPLIT["test"] if re.search(r"mesa-sleep-(\d{4})", x)})
+# Phase 13c'de seçilen 20 hasta — reproduce için sabit
+CURRENT_20 = sorted({...})  # data/private/subject_lists/n20_clean_cohort_full.csv
+remaining = sorted(set(test_ids) - set(CURRENT_20))
+new_80 = sorted(random.Random(42).sample(remaining, 80))
+n100 = sorted(set(CURRENT_20) | set(new_80))
 ```
 
-### Yeni 80 (indirilecek)
-```
-[REDACTED_LIST_PER_DUA]
-```
+DUA imzalanmış kullanıcılar aynı SleepFM `dataset_split.json` (SHA256
+`57d5019a...`) ile aynı 100 hastayı üretir.
 
 ## Uygulama Adımları (DUA onayı sonrası)
 
 ```powershell
 # 1. Yeni 80 hastayı indir (mevcut 20 zaten data/clean_cohort_run/)
-python scripts/download_nsrr_mesa.py `
-  --out data/n100_cohort_run/raw `
-  --subjects [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA] `
-             [REDACTED_LIST_PER_DUA]
+#    Subject listesi private dosyadan okunur:
+$ids = (Get-Content data/private/subject_lists/n100_selection.txt | Where-Object { $_ -notmatch '^#' }) -join ' '
+python scripts/download_nsrr_mesa.py --out data/n100_cohort_run/raw --subjects $ids.Split()
 
 # 2. Mevcut 20 clean_cohort_run/ embeddings'i n100_cohort_run/ altına kopyala
 # (veya symlink); disk tasarrufu için symlink önerilir
@@ -104,12 +112,10 @@ python scripts/regen_reproduce_tables.py > /tmp/n100_snippets.md
 | Label-shuffle p-tavan | 0.002 (500 perm floor) | 5000 perm ile 0.REDACTED'ye düşer, daha keskin |
 | Ham SleepFM + KNN klinik risk | Ters yönlü | Muhtemelen aynı — bu **mimari sınır**, ölçek çözmez |
 
-## Öncelikli Kararlar (Kullanıcıdan)
+## Öncelikli Kararlar
 
-1. **DUA yasal onay** — henüz beklemede. NSRR'a mail atıldı, cevap gelecek.
-2. **Random seed=42 kabul mi?** Farklı seed = farklı 80 hasta. Bir kez seçilirse
-   tekrar üretilebilirlik için sabit tutulur.
-3. **`data/n100_cohort_run/` .gitignore'da tutulacak** — 20 GB embeddings zaten
-   .gitignore'da; sadece pretrain_independence CSV commit edilir.
+1. **DUA yasal onay** — 3 April 2026'da imzalandı, `Effective Date` = data release
+2. **Random seed=42** — sabit, reproducibility için değiştirilmez
+3. **`data/n100_cohort_run/` .gitignore'da** — hiçbir derived/raw veri commit edilmez (DUA Bölüm 5)
 4. **n=100'den sonra ne?** — mesa test split'in 150'sinin tümüne çıkma seçeneği
    var (~50 daha, +10 GB); veya CoxPH fine-tuning ile downstream clinical.
