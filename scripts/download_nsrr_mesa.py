@@ -78,9 +78,10 @@ DUA_PROBE_PATH = "datasets/mesa/files/datasets/mesa-data-dictionary-0.6.0-domain
 EDF_PATH_FMT = "datasets/mesa/files/polysomnography/edfs/mesa-sleep-{sid}.edf"
 XML_PATH_FMT = "datasets/mesa/files/polysomnography/annotations-events-nsrr/mesa-sleep-{sid}-nsrr.xml"
 
-DEFAULT_SUBJECTS: Tuple[str, ...] = (
-    "[REDACTED_LIST_PER_DUA]",
-)
+# NSRR DAUA §5 — subject lists are Data Elements and cannot be hardcoded
+# into a git-tracked source file. `--subjects` is required; the caller
+# reads the concrete list from data/private/subject_lists/ (git-ignored).
+DEFAULT_SUBJECTS: Tuple[str, ...] = ()
 
 MIN_EDF_BYTES = 50 * 1024 * 1024
 MIN_XML_BYTES = 5 * 1024
@@ -413,6 +414,12 @@ def main() -> int:
         print(e, file=sys.stderr)
         return 2
 
+    if not args.subjects:
+        print("[error] --subjects is required. NSRR DAUA §5 prohibits "
+              "hardcoding subject lists into the tracked source; pass IDs "
+              "explicitly or read them from data/private/subject_lists/.",
+              file=sys.stderr)
+        return 2
     subjects = [normalize_sid(s) for s in args.subjects]
     args.out.mkdir(parents=True, exist_ok=True)
 
