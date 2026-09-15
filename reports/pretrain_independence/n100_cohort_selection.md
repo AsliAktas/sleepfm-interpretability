@@ -109,7 +109,7 @@ python scripts/regen_reproduce_tables.py > /tmp/n100_snippets.md
 | Cross-modality FWER'i geçen sinyal | 0 | 1-3 gerçek sinyal olabilir (EMG-BMI, MULTI-BMI ilk aday) |
 | Subject-dropout CV | %20-35 | Düşer (%10-20 beklenir); n arttıkça |
 | Chance baseline null_mean | ~0.11 | Düşer (~0.05) — büyük n = daha küçük random overlap |
-| Label-shuffle p-tavan | 0.002 (500 perm floor) | 5000 perm ile 0.REDACTED'ye düşer, daha keskin |
+| Label-shuffle p-tavan | 0.002 (500 perm floor) | 5000 perm ile 2e-4 civarına düşer, daha keskin |
 | Ham SleepFM + KNN klinik risk | Ters yönlü | Muhtemelen aynı — bu **mimari sınır**, ölçek çözmez |
 
 ## Öncelikli Kararlar

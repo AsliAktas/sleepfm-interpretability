@@ -30,18 +30,16 @@ from download_nsrr_mesa import (
 
 
 class TestNormalizeSid:
-    # Non-MESA-range synthetic IDs (9xxx) — real MESA range is REDACTED-6812.
-    # NSRR DAUA §5 prohibits real subject IDs in tracked source, even as
-    # test fixtures.
-    @pytest.mark.parametrize("raw,expected", [
-        ("999", "0999"),
-        ("9999", "9999"),
-        ("9001", "9001"),
-        ("1", "REDACTED"),
-        (9001, "9001"),
-    ])
-    def test_zero_pads_to_four_digits(self, raw, expected):
-        assert normalize_sid(str(raw)) == expected
+    # Non-MESA-range synthetic IDs (9xxx). NSRR DAUA §5 prohibits real subject
+    # IDs in tracked source, even as test fixtures. The one-digit input is a
+    # normalisation-corner test — the expected output is derived via the same
+    # zero-padding logic under test rather than hardcoded, so it doesn't leak
+    # a real MESA ID into the source.
+    @pytest.mark.parametrize("raw", ["999", "9999", "9001", "1", 9001])
+    def test_zero_pads_to_four_digits(self, raw):
+        s = str(raw)
+        expected = s.zfill(4)
+        assert normalize_sid(s) == expected
 
     def test_rejects_non_numeric(self):
         with pytest.raises(ValueError):
