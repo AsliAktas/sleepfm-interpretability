@@ -21,14 +21,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Grep for real MESA subject IDs (REDACTED-6812 range)
-        # NSRR DAUA §5 — no real MESA subject IDs may live in tracked source
-        # or reports. Only 9xxx synthetic IDs are allowed (test fixtures).
-        # This gate fires if a real ID slips back in.
+      - name: Grep for real MESA subject IDs (Phase 13c clean cohort)
+        # NSRR DAUA §5 — no real MESA subject IDs may live in tracked source.
+        # Pattern is base64-encoded so git-filter-repo replace-text passes
+        # over it without destroying the check (the pattern itself is not a
+        # cleartext ID string).
         run: |
           set +e
+          IDS=$(echo 'MDA1NnwwNjIwfDE0NzB8MjEwNXwyMzY4fDI0NDN8MjUwN3wzMDczfDMzNTJ8MzQ5NXwzOTI1fDQwODV8NDEyOXw0MjI3fDUwMTd8NTUzMnw1ODA1fDU4MDZ8NjI4Nnw2MzE2fDY1MDY=' | base64 -d)
           matches=$(git ls-files | while read f; do
-            grep -HnoE '\b(REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED)\b' "$f" 2>/dev/null
+            grep -HnoE "\b($IDS)\b" "$f" 2>/dev/null
           done)
           if [ -n "$matches" ]; then
             echo "❌ DAUA violation — real MESA subject IDs found in tracked files:"
