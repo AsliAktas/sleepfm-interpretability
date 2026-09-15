@@ -44,8 +44,10 @@ def main() -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--modality", default="MULTI",
                         help="BAS/RESP/EKG/EMG/MULTI (default: MULTI, 4x128 concat)")
-    parser.add_argument("--query-subject", default="REDACTED",
-                        help="Subject ID to use as query (default: REDACTED, the one clean-cohort ID)")
+    parser.add_argument("--query-subject", required=True,
+                        help="Subject ID to use as query. Required; NSRR DAUA §5 "
+                             "prohibits hardcoding subject IDs in tracked source. "
+                             "Pass an ID from your local data/private/subject_lists/.")
     parser.add_argument("--k", type=int, default=5,
                         help="Number of nearest neighbours")
     parser.add_argument("--embedding-dir", type=Path, default=None,

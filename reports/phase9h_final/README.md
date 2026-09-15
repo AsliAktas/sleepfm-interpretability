@@ -60,21 +60,22 @@ Subagent yorumu: *"BAS embedding kontrastif pretraining objektifinin subject-dis
 ### 9g — Clinical-bridge entegrasyonu MVP
 `src/clinical_bridge_adapter.py` + `scripts/demo_sleepfm_to_fhir.py` — SleepFM embedding'inden KNN-based proxy risk üretip clinical-bridge'in `SleepFMToFHIRAdapter`'ına verir.
 
-**Demo çıktısı (query=REDACTED, MULTI 512-dim):**
+**Demo çıktısı (query pseudonymized, MULTI 512-dim):**
 ```
 [cohort] 20 subjects, embedding dim=512
-[query]  subject REDACTED (AHI=4.4) vs 19 reference subjects
+[query]  subject SUBJ_X (AHI bin: <5) vs 19 reference subjects
 [risk]   proxy risk score = 0.416
 [neighbours] top-5:
-   REDACTED  sim=+0.963  ahi=2.7
-   REDACTED  sim=+0.962  ahi=8.3
-   REDACTED  sim=+0.956  ahi=10.0
-   REDACTED  sim=+0.956  ahi=23.4
-   REDACTED  sim=+0.946  ahi=18.1
-[fhir]   RiskAssessment/Patient/REDACTED, Low likelihood, 5 similar-patient references (extension)
+   SUBJ_*  sim=~0.95  ahi_bin=<5
+   SUBJ_*  sim=~0.95  ahi_bin=5-15
+   SUBJ_*  sim=~0.95  ahi_bin=5-15
+   SUBJ_*  sim=~0.95  ahi_bin=15-30
+   SUBJ_*  sim=~0.95  ahi_bin=5-15
+[fhir]   RiskAssessment/Patient/SUBJ_X, Low likelihood, 5 similar-patient references
 ```
 
-FHIR R4 çıktısı `reports/phase9h_final/../phase9g_demo/risk_assessment_REDACTED_MULTI.json`.
+FHIR R4 çıktısı pseudonymized formda `reports/phase9g_demo/` altında.
+Subject ID'ler ve tam AHI değerleri NSRR DAUA §5 gereği belgelenmedi.
 
 **Önemli:** Risk score bir proxy (KNN-weighted AHI severity); gerçek CoxPH head lokalde yok. Method demonstration.
 
@@ -137,5 +138,5 @@ FHIR R4 çıktısı `reports/phase9h_final/../phase9g_demo/risk_assessment_REDAC
 - `phase8c_rigor_on_contaminated/` — rigor pass v1
 - `phase8e_rigor_v2_on_contaminated/` — rigor v2 after fixes
 - `phase9e_chunk_level_v2/` — chunk × sleep-stage analiz
-- `phase9g_demo/risk_assessment_REDACTED_MULTI.json` — FHIR demo çıktısı
+- `phase9g_demo/risk_assessment_SUBJ_*_MULTI.json` — FHIR demo çıktısı (pseudonymized)
 - `phase9h_final/README.md` — bu rapor

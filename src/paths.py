@@ -42,13 +42,16 @@ _LEGACY_ROOT = _PROJECT_ROOT / "data" / "smoke_run"
 # by resolve_cohort (or RuntimeError raised if $SLEEPFM_FORBID_LEGACY_FALLBACK=1).
 # New machines should set $SLEEPFM_MESA_XML_DIR and $SLEEPFM_METADATA_CSV
 # (see .env.example) rather than relying on these.
+# Non-existent placeholder path — resolve_cohort raises a helpful error when
+# these are hit without env vars set. Cross-platform: no developer-machine
+# defaults leak into the codebase.
 _LEGACY_MESA_XML = Path(os.environ.get(
     "SLEEPFM_MESA_XML_DIR_LEGACY",
-    "C:/Users/User/Desktop/Projeler/SleepFM/mesa",
+    "/nonexistent/set-SLEEPFM_MESA_XML_DIR-env-var",
 ))
 _LEGACY_METADATA_CSV = Path(os.environ.get(
     "SLEEPFM_METADATA_CSV_LEGACY",
-    "C:/Users/User/Desktop/Projeler/SleepFM/mesa/.csv/mesa-sleep-dataset-0.8.0.csv",
+    "/nonexistent/set-SLEEPFM_METADATA_CSV-env-var",
 ))
 
 _COHORT_ENV = "SLEEPFM_COHORT_ROOT"

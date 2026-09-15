@@ -24,7 +24,7 @@ from sleep_phases import (
 
 
 MESA_XML_ROOT = Path("C:/Users/User/Desktop/Projeler/SleepFM/mesa")
-REAL_MESA_XML = MESA_XML_ROOT / "mesa-sleep-REDACTED-nsrr.xml"
+REAL_MESA_XML = MESA_XML_ROOT / "mesa-sleep-9001-nsrr.xml"
 
 
 def _write_min_xml(path: Path, stage_events: list) -> None:
@@ -276,36 +276,36 @@ class TestLoadChunkLabelsForCohort:
         )
 
     def test_returns_skipped_for_missing_xml(self, tmp_path):
-        self._write_valid_xml(tmp_path / "mesa-sleep-REDACTED-nsrr.xml",
+        self._write_valid_xml(tmp_path / "mesa-sleep-9001-nsrr.xml",
                               [("Wake|0", 0.0, 300.0)])
         labels, skipped = load_chunk_labels_for_cohort(
-            tmp_path, {"REDACTED": 1, "REDACTED": 1, "0003": 1},
+            tmp_path, {"9001": 1, "9002": 1, "9003": 1},
         )
-        assert set(labels.keys()) == {"REDACTED"}
-        assert set(skipped) == {"REDACTED", "0003"}
+        assert set(labels.keys()) == {"9001"}
+        assert set(skipped) == {"9002", "9003"}
 
     def test_returns_skipped_for_corrupt_xml(self, tmp_path):
-        self._write_valid_xml(tmp_path / "mesa-sleep-REDACTED-nsrr.xml",
+        self._write_valid_xml(tmp_path / "mesa-sleep-9001-nsrr.xml",
                               [("Wake|0", 0.0, 300.0)])
-        (tmp_path / "mesa-sleep-REDACTED-nsrr.xml").write_text(
+        (tmp_path / "mesa-sleep-9002-nsrr.xml").write_text(
             "<PSGAnnotation><ScoredEvent>truncated", encoding="utf-8",
         )
         labels, skipped = load_chunk_labels_for_cohort(
-            tmp_path, {"REDACTED": 1, "REDACTED": 1},
+            tmp_path, {"9001": 1, "9002": 1},
         )
-        assert set(labels.keys()) == {"REDACTED"}
-        assert skipped == ["REDACTED"]
+        assert set(labels.keys()) == {"9001"}
+        assert skipped == ["9002"]
 
     def test_recording_offset_propagated(self, tmp_path):
-        self._write_valid_xml(tmp_path / "mesa-sleep-REDACTED-nsrr.xml", [
+        self._write_valid_xml(tmp_path / "mesa-sleep-9001-nsrr.xml", [
             ("Wake|0", 0.0, 120.0),
             ("Stage 2 sleep|2", 120.0, 300.0),
         ])
         labels, _ = load_chunk_labels_for_cohort(
-            tmp_path, {"REDACTED": 1},
-            recording_offset_by_subject={"REDACTED": 120.0},
+            tmp_path, {"9001": 1},
+            recording_offset_by_subject={"9001": 120.0},
         )
-        assert labels["REDACTED"][0].dominant_stage == "N2"
+        assert labels["9001"][0].dominant_stage == "N2"
 
 
 @pytest.mark.skipif(not REAL_MESA_XML.exists(),

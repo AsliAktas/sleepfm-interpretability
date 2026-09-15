@@ -13,10 +13,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  dua-hygiene:
+    name: DAUA compliance grep-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Grep for real MESA subject IDs (REDACTED-6812 range)
+        # NSRR DAUA §5 — no real MESA subject IDs may live in tracked source
+        # or reports. Only 9xxx synthetic IDs are allowed (test fixtures).
+        # This gate fires if a real ID slips back in.
+        run: |
+          set +e
+          matches=$(git ls-files | while read f; do
+            grep -HnoE '\b(REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED|REDACTED)\b' "$f" 2>/dev/null
+          done)
+          if [ -n "$matches" ]; then
+            echo "❌ DAUA violation — real MESA subject IDs found in tracked files:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "✅ No real MESA subject IDs in tracked files"
+
+      - name: Confirm DEFAULT_SUBJECTS is empty
+        run: |
+          python -c "
+          import sys; sys.path.insert(0, 'scripts')
+          from download_nsrr_mesa import DEFAULT_SUBJECTS
+          assert DEFAULT_SUBJECTS == (), f'DEFAULT_SUBJECTS must be empty, got: {DEFAULT_SUBJECTS}'
+          print('✅ DEFAULT_SUBJECTS is empty')
+          "
+
   pytest:
     name: pytest (Python 3.10)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: dua-hygiene  # only run tests once DAUA gate is green
 
     steps:
       - name: Checkout

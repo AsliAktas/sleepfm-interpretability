@@ -50,9 +50,10 @@ def _resolve_split_file() -> Path:
     ]:
         if cand.exists():
             return cand
-    # Historical default (developer machine)
-    return Path("C:/Users/User/Desktop/Projeler/SleepFM/sleepFMoriginal/"
-                "sleepfm-clinical/sleepfm/configs/dataset_split.json")
+    # Cross-platform default: adjacent to this repo — SleepFM upstream sibling
+    # via env var. No developer-machine hardcode.
+    return Path("SET_SLEEPFM_UPSTREAM_DIR_ENV_VAR/sleepfm/configs/"
+                "dataset_split.json")
 
 
 SPLIT_FILE_DEFAULT = _resolve_split_file()

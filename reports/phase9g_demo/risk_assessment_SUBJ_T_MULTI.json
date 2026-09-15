@@ -2,9 +2,9 @@
   "resourceType": "RiskAssessment",
   "status": "final",
   "subject": {
-    "reference": "Patient/REDACTED"
+    "reference": "Patient/SUBJ_T"
   },
-  "occurrenceDateTime": "2026-09-14T10:29:20Z",
+  "occurrenceDateTime": "2026-09-14T10:29:24Z",
   "method": {
     "coding": [
       {
@@ -25,7 +25,7 @@
           }
         ]
       },
-      "probabilityDecimal": 32.67779238381913,
+      "probabilityDecimal": 45,
       "qualitativeRisk": {
         "coding": [
           {
@@ -46,15 +46,15 @@
           "extension": [
             {
               "url": "subject_id",
-              "valueString": "REDACTED"
+              "valueString": "SUBJ_B"
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.954788863658905
+              "valueDecimal": 0.9517644643783569
             },
             {
               "url": "ahi",
-              "valueDecimal": 16.085790885
+              "valueDecimal": 22.5
             }
           ]
         },
@@ -63,15 +63,15 @@
           "extension": [
             {
               "url": "subject_id",
-              "valueString": "REDACTED"
+              "valueString": "SUBJ_H"
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9517646431922913
+              "valueDecimal": 0.9424700736999512
             },
             {
               "url": "ahi",
-              "valueDecimal": 3.4328358209
+              "valueDecimal": 22.5
             }
           ]
         },
@@ -80,15 +80,15 @@
           "extension": [
             {
               "url": "subject_id",
-              "valueString": "REDACTED"
+              "valueString": "SUBJ_G"
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9432202577590942
+              "valueDecimal": 0.942460298538208
             },
             {
               "url": "ahi",
-              "valueDecimal": 23.2
+              "valueDecimal": 22.5
             }
           ]
         },
@@ -97,15 +97,15 @@
           "extension": [
             {
               "url": "subject_id",
-              "valueString": "REDACTED"
+              "valueString": "SUBJ_C"
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9387037754058838
+              "valueDecimal": 0.9392964839935303
             },
             {
               "url": "ahi",
-              "valueDecimal": 5.4915254237
+              "valueDecimal": 2.5
             }
           ]
         },
@@ -114,15 +114,15 @@
           "extension": [
             {
               "url": "subject_id",
-              "valueString": "REDACTED"
+              "valueString": "SUBJ_K"
             },
             {
               "url": "cosine_similarity",
-              "valueDecimal": 0.9360862970352173
+              "valueDecimal": 0.9326975345611572
             },
             {
               "url": "ahi",
-              "valueDecimal": 0.6976744186
+              "valueDecimal": 2.5
             }
           ]
         }

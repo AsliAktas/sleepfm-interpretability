@@ -30,12 +30,15 @@ from download_nsrr_mesa import (
 
 
 class TestNormalizeSid:
+    # Non-MESA-range synthetic IDs (9xxx) — real MESA range is REDACTED-6812.
+    # NSRR DAUA §5 prohibits real subject IDs in tracked source, even as
+    # test fixtures.
     @pytest.mark.parametrize("raw,expected", [
-        ("620", "REDACTED"),
-        ("REDACTED", "REDACTED"),
-        ("REDACTED", "REDACTED"),
+        ("999", "0999"),
+        ("9999", "9999"),
+        ("9001", "9001"),
         ("1", "REDACTED"),
-        (620, "REDACTED"),
+        (9001, "9001"),
     ])
     def test_zero_pads_to_four_digits(self, raw, expected):
         assert normalize_sid(str(raw)) == expected
@@ -65,7 +68,7 @@ class TestDefaultSubjects:
 class TestDownloadResult:
     def _ok_result(self, **overrides):
         base = dict(
-            subject_id="REDACTED", edf_status="downloaded", xml_status="downloaded",
+            subject_id="9001", edf_status="downloaded", xml_status="downloaded",
             edf_bytes=MIN_EDF_BYTES + 1, xml_bytes=MIN_XML_BYTES + 1,
             edf_valid_header=True, xml_valid_header=True,
         )

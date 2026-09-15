@@ -140,11 +140,15 @@ Audit "bootstrap CI ekle" dedi. Şimdi:
 
 Audit "MULTI concat naive, RESP-only test et" dedi. Test ettim:
 
-| Query | Gerçek AHI | MULTI proxy risk | RESP proxy risk |
+| Query kategorisi | AHI aralığı | MULTI proxy risk | RESP proxy risk |
 |---|---:|---:|---:|
-| REDACTED (severe) | 85.9 | 0.52 | 0.47 |
-| 620 (moderate) | 21.8 | 0.33 | 0.49 |
-| REDACTED (normal) | 0.0 | 0.55 | 0.63 |
+| Severe hasta | >30 | 0.52 | 0.47 |
+| Moderate hasta | 15-30 | 0.33 | 0.49 |
+| Normal hasta | <5 | 0.55 | 0.63 |
+
+Subject ID'ler ve tam AHI değerleri NSRR DAUA §5 gereği belgelenmedi;
+ham dosyalar (`data/private/subject_lists/`) yalnızca DAUA imzalı
+kullanıcıda mevcut.
 
 **Bulgu:** RESP-only KNN de MULTI kadar başarısız. Severe hasta yine düşük
 risk, normal hasta yine yüksek. Bu **beklenen**: pretraining objective'i
@@ -259,4 +263,4 @@ Full suite: **193/193 geçiyor** (öncesi 185).
 - `bootstrap_stability_summary.csv` — 5 modalite × subject-dropout cluster count varyansı (Phase 16)
 - `bootstrap_stability_per_bootstrap.csv` — 250 bootstrap × per-modality ham çıktı
 
-Demo çıktıları: `../phase9g_demo/risk_assessment_{REDACTED,REDACTED,REDACTED}_{MULTI,RESP}.json`
+Demo çıktıları: `../phase9g_demo/risk_assessment_SUBJ_*.json` (pseudonym'lenmiş)

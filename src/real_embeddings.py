@@ -40,7 +40,7 @@ _VALID_AGGREGATES = {"spherical_mean", "mean", "median"}
 # MESA subject IDs are 4-5 digit zero-padded integers; the pattern requires
 # the id to be immediately followed by a known token ("_embeddings",
 # "-nsrr", or end of stem) so ambiguous / versioned filenames like
-# "mesa-sleep-REDACTED-v2_embeddings" fail loudly (audit finding 2). Single
+# "mesa-sleep-XXXX-v2_embeddings" fail loudly (audit finding 2). Single
 # canonical parser — do not reinvent split()-based extraction elsewhere.
 _MESA_SID_RE = re.compile(r"mesa-sleep-(\d{4,5})(?:_embeddings|-nsrr|\Z)")
 
@@ -60,7 +60,7 @@ def _subject_id_from_filename(path: Path) -> str:
     """Extract the MESA subject id from a SleepFM output filename.
 
     Uses a strict regex so retry / versioned dumps like
-    'mesa-sleep-REDACTED-v2_embeddings.hdf5' fail loudly instead of quietly
+    'mesa-sleep-XXXX-v2_embeddings.hdf5' fail loudly instead of quietly
     returning 'v2' as the subject id (audit finding 2).
     """
     m = _MESA_SID_RE.search(path.stem)

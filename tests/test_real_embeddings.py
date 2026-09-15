@@ -22,7 +22,7 @@ from real_embeddings import (
 def synthetic_embedding_dir(tmp_path):
     """Create 3 synthetic SleepFM output HDF5s with known chunk counts."""
     rng = np.random.default_rng(42)
-    chunk_counts = {"REDACTED": 100, "REDACTED": 50, "0003": 75}
+    chunk_counts = {"9001": 100, "9002": 50, "9003": 75}
     for sid, n in chunk_counts.items():
         path = tmp_path / f"mesa-sleep-{sid}_embeddings.hdf5"
         with h5py.File(path, "w") as f:
@@ -34,18 +34,18 @@ def synthetic_embedding_dir(tmp_path):
 class TestSubjectIdParsing:
     def test_strips_embeddings_suffix(self):
         from pathlib import Path
-        assert _subject_id_from_filename(Path("mesa-sleep-REDACTED_embeddings.hdf5")) == "REDACTED"
+        assert _subject_id_from_filename(Path("mesa-sleep-9001_embeddings.hdf5")) == "9001"
 
     def test_takes_regex_matched_digits(self):
         from pathlib import Path
-        assert _subject_id_from_filename(Path("mesa-sleep-REDACTED_embeddings.hdf5")) == "REDACTED"
+        assert _subject_id_from_filename(Path("mesa-sleep-9001_embeddings.hdf5")) == "9001"
 
     def test_rejects_versioned_filename(self):
-        """Audit finding 2: 'mesa-sleep-REDACTED-v2_embeddings.hdf5' used to
+        """Audit finding 2: 'mesa-sleep-9001-v2_embeddings.hdf5' used to
         silently return 'v2'. Must now raise ValueError."""
         from pathlib import Path
         with pytest.raises(ValueError, match="cannot parse"):
-            _subject_id_from_filename(Path("mesa-sleep-REDACTED-v2_embeddings.hdf5"))
+            _subject_id_from_filename(Path("mesa-sleep-9001-v2_embeddings.hdf5"))
 
     def test_rejects_unrelated_filename(self):
         from pathlib import Path
@@ -94,7 +94,7 @@ class TestLoadSubjectEmbeddings:
         """Same chunk direction distribution + more chunks -> same aggregated vector."""
         rng = np.random.default_rng(0)
         base = rng.normal(size=(50, 128)).astype(np.float32)
-        for sid, k in [("REDACTED", 1), ("REDACTED", 3)]:
+        for sid, k in [("9001", 1), ("9002", 3)]:
             arr = np.tile(base, (k, 1))
             path = tmp_path / f"mesa-sleep-{sid}_embeddings.hdf5"
             with h5py.File(path, "w") as f:
@@ -103,9 +103,9 @@ class TestLoadSubjectEmbeddings:
         X, sids = load_subject_embeddings(
             embedding_dir=tmp_path, modality="BAS", aggregate="spherical_mean",
         )
-        assert set(sids) == {"REDACTED", "REDACTED"}
+        assert set(sids) == {"9001", "9002"}
         idx = {s: i for i, s in enumerate(sids)}
-        np.testing.assert_allclose(X[idx["REDACTED"]], X[idx["REDACTED"]], atol=1e-5)
+        np.testing.assert_allclose(X[idx["9001"]], X[idx["9002"]], atol=1e-5)
 
     def test_median_differs_from_mean_on_skewed(self, synthetic_embedding_dir):
         tmp_path, _ = synthetic_embedding_dir
@@ -171,16 +171,16 @@ class TestLoadSubjectEmbeddingsMultimodal:
         """A subject missing one modality's dataset should be filtered out AND
         the skip should be surfaced in the returned `skipped` list."""
         rng = np.random.default_rng(0)
-        good = tmp_path / "mesa-sleep-REDACTED_embeddings.hdf5"
+        good = tmp_path / "mesa-sleep-9001_embeddings.hdf5"
         with h5py.File(good, "w") as f:
             for m in SLEEPFM_MODALITIES:
                 f.create_dataset(m, data=rng.normal(size=(10, 128)).astype(np.float32))
-        broken = tmp_path / "mesa-sleep-REDACTED_embeddings.hdf5"
+        broken = tmp_path / "mesa-sleep-9002_embeddings.hdf5"
         with h5py.File(broken, "w") as f:
             f.create_dataset("BAS", data=rng.normal(size=(10, 128)).astype(np.float32))
             # missing RESP, EKG, EMG
         X, sids, skipped = load_subject_embeddings_multimodal(embedding_dir=tmp_path)
-        assert sids == ["REDACTED"], "broken subject must be skipped"
+        assert sids == ["9001"], "broken subject must be skipped"
         assert X.shape == (1, 512)
         assert len(skipped) == 1
         assert skipped[0][0] == broken.name

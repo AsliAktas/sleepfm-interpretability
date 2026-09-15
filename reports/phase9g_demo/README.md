@@ -44,17 +44,24 @@ ile regenerate edildi ve şu an **hiçbir dosya AFib kodu içermiyor**.
 Eski `risk_assessment_REDACTED_MULTI.json` (kontamine smoke_run kohortundan
 kalıntı) silindi.
 
-## Mevcut Dosyalar (Phase 16 sonrası)
+## Mevcut Dosyalar (Phase 19 sonrası)
 
-| Dosya | Modalite | Query subject | SNOMED |
-|---|---|---|---|
-| `risk_assessment_REDACTED_MULTI.json` | MULTI (512-dim) | REDACTED | 78275009 (OSA) |
-| `risk_assessment_REDACTED_MULTI.json` | MULTI | REDACTED | 78275009 (OSA) |
-| `risk_assessment_REDACTED_MULTI.json` | MULTI | REDACTED | 78275009 (OSA) |
-| `risk_assessment_REDACTED_MULTI.json` | MULTI | REDACTED | 78275009 (OSA) |
-| `risk_assessment_REDACTED_RESP.json` | RESP-only | REDACTED | 78275009 (OSA) |
-| `risk_assessment_REDACTED_RESP.json` | RESP | REDACTED | 78275009 (OSA) |
-| `risk_assessment_REDACTED_RESP.json` | RESP | REDACTED | 78275009 (OSA) |
+Subject ID'ler NSRR DAUA §5 gereği pseudonym'lere çevrildi (SUBJ_A, SUBJ_B, ...).
+AHI değerleri kategori binlerine yuvarlandı (`<5`, `5-15`, `15-30`, `>30`)
+— demografik parmak izi engellendi.
 
-Yeniden üretim: `python scripts/demo_sleepfm_to_fhir.py --modality
-MULTI --query-subject <ID> --cohort-root data/clean_cohort_run`
+| Dosya | Modalite | SNOMED |
+|---|---|---|
+| `risk_assessment_SUBJ_B_MULTI.json` | MULTI (512-dim) | 78275009 (OSA) |
+| `risk_assessment_SUBJ_R_MULTI.json` | MULTI | 78275009 (OSA) |
+| `risk_assessment_SUBJ_T_MULTI.json` | MULTI | 78275009 (OSA) |
+| `risk_assessment_SUBJ_U_MULTI.json` | MULTI | 78275009 (OSA) |
+| `risk_assessment_SUBJ_B_RESP.json` | RESP-only | 78275009 (OSA) |
+| `risk_assessment_SUBJ_R_RESP.json` | RESP | 78275009 (OSA) |
+| `risk_assessment_SUBJ_U_RESP.json` | RESP | 78275009 (OSA) |
+
+Yeniden üretim (DAUA imzalı kullanıcı, private subject listesi):
+```powershell
+python scripts/demo_sleepfm_to_fhir.py --modality MULTI `
+  --query-subject <ID_from_data/private/> --cohort-root data/clean_cohort_run
+```

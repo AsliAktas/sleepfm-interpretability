@@ -12,7 +12,7 @@ AHI şiddetine göre stratifiye edilmiş 20 MESA hastası (SleepFM test split'te
 |---|---:|---|
 | **Normal** (AHI<5) | 5 | [REDACTED_LIST_PER_DUA] |
 | **Mild** (AHI 5-15) | 5 | [REDACTED_LIST_PER_DUA] |
-| **Moderate** (AHI 15-30) | 5 | 620, [REDACTED_LIST_PER_DUA] |
+| **Moderate** (AHI 15-30) | 5 | [REDACTED_PER_DUA] |
 | **Severe** (AHI>30) | 5 | [REDACTED_LIST_PER_DUA] |
 
 Detaylı liste: `scratchpad/clean_cohort_20.csv`
@@ -43,7 +43,7 @@ python scripts/download_nsrr_mesa.py --out "C:/Users/User/Desktop/Projeler/Sleep
 
 Ya da custom subject list:
 ```powershell
-python scripts/download_nsrr_mesa.py --subjects 620 REDACTED REDACTED --out .
+python scripts/download_nsrr_mesa.py --subjects <ID1> <ID2> <ID3> --out .
 ```
 
 Script:
@@ -78,12 +78,13 @@ Süre: 20-40 dk (bağlantı hızına bağlı).
 
 ## İndirdikten Sonra
 
-`preprocess_and_embed_smoke.py` script'ini `MESA_DIR` değişkeni ve `OUT_ROOT` değişkeni değiştirilerek tekrar çalıştır — pipeline aynı, sadece kaynak dizin farklı. Toplam ~15 dk çalışacak (10 dk preprocess + 5 dk inference + analiz).
+Ham EDF → HDF5 preprocess için SleepFM upstream repo'daki
+`sleepfm/preprocessing/` scriptleri kullanılır. Ayrıntı ve komut zinciri:
+[`REPRODUCE.md §6-7`](REPRODUCE.md).
 
-```python
-# Değiştirilecek satırlar:
-MESA_DIR = Path("C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean")
-OUT_ROOT = Path("C:/Users/User/Desktop/Projeler/sleepfm_interpretability/data/clean_cohort")
+Preprocess + inference + rigor pass toplam ~15 dk (n=20 için).
+
+Sonuçları belirli bir raporda toplamak için:
+```bash
+python src/clinical_analysis.py --output-dir reports/<yeni_phase_ismi>
 ```
-
-Sonra `clinical_analysis.py`'ı `DEFAULT_REPORT_DIR = ... / "phase8"` ile çalıştırıp Phase 8 raporlarını üret.
