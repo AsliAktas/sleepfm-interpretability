@@ -46,10 +46,15 @@ class TestNormalizeSid:
 
 
 class TestDefaultSubjects:
-    def test_size_is_20(self):
-        assert len(DEFAULT_SUBJECTS) == 20
+    def test_is_empty_per_dua(self):
+        # NSRR DAUA §5 — subject lists are Data Elements and cannot be
+        # hardcoded in tracked source. Phase 18 emptied DEFAULT_SUBJECTS
+        # and made --subjects effectively required.
+        assert DEFAULT_SUBJECTS == ()
 
     def test_all_normalized(self):
+        # Empty tuple trivially satisfies "every id is normalized"; kept
+        # so the guarantee re-fires if someone re-adds ids in the future.
         for sid in DEFAULT_SUBJECTS:
             assert sid == normalize_sid(sid), f"{sid} is not canonical form"
 
