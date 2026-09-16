@@ -46,7 +46,7 @@ $env:NSRR_TOKEN = "senin_tokenin"
 
 **Çalıştır** (default 20 stratified hasta, ~4 GB):
 ```powershell
-python scripts/download_nsrr_mesa.py --out "C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean"
+python scripts/download_nsrr_mesa.py --out "<your-download-dir>"
 ```
 
 Ya da custom subject list:
@@ -72,7 +72,7 @@ Detay: https://github.com/nsrr/nsrr-gem
 1. https://sleepdata.org/datasets/mesa/files
 2. `polysomnography/edfs/mesa-sleep-{ID}.edf` her ID için tıkla
 3. `polysomnography/annotations-events-nsrr/mesa-sleep-{ID}-nsrr.xml` aynı şekilde
-4. Hepsini `C:/Users/User/Desktop/Projeler/SleepFM/mesa_test_clean/` altına koy
+4. Hepsini `<your-download-dir>/` altına koy
 
 ## Boyut ve Zaman Tahmini
 
