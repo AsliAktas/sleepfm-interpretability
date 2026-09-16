@@ -1,0 +1,42 @@
+#!/bin/bash
+# NSRR DAUA §5 pre-commit guard — blocks any commit that would introduce
+# a non-synthetic mesa-sleep-XXXX pattern into a tracked file. Mirrors the
+# CI grep-gate in .github/workflows/tests.yml but runs LOCALLY before push,
+# so leaks can't reach GitHub.
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass (emergencies only):
+#   git commit --no-verify
+
+set +e
+
+# Only scan files that are being added/modified in this commit.
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$staged" ]; then
+    exit 0
+fi
+
+matches=""
+for f in $staged; do
+    if [ -f "$f" ]; then
+        hit=$(grep -HnoE 'mesa-sleep-[0-9]{4,5}' "$f" 2>/dev/null | \
+              grep -vE 'mesa-sleep-9[0-9]{3}|mesa-sleep-12345')
+        if [ -n "$hit" ]; then
+            matches="$matches\n$hit"
+        fi
+    fi
+done
+
+if [ -n "$matches" ]; then
+    echo "❌ pre-commit: non-synthetic mesa-sleep-XXXX ID in staged files:"
+    echo -e "$matches"
+    echo ""
+    echo "NSRR DAUA §5 prohibits real subject IDs in tracked source."
+    echo "Only synthetic 9xxx range and the 12345 test fixture are allowed."
+    echo "Bypass (emergency only): git commit --no-verify"
+    exit 1
+fi
+
+exit 0
