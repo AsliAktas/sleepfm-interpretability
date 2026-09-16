@@ -13,7 +13,11 @@ belgeler.
 - Cohort seçim: random sampling (`random_state=42`, **AHI-stratified değil** —
   Phase 13c #5 audit'in circularity uyarısı)
 - Preprocess: 128 Hz resample, EDF→HDF5 (upstream SleepFM pipeline;
-  Windows path bug için lokal wrapper — bkz. [scripts/preprocess_wrapper](../../scripts/))
+  Windows path bug bypass edildi (upstream `preprocessing.py:332`
+  `.split('/')[-1]` POSIX-varsayımı Windows'ta hdf5 output'u yanlış path'e
+  yazar; local wrapper `os.path.basename` kullanıyor. Wrapper repo'da
+  tracked değil — reproducibility için wrapper içeriği aşağıda
+  §Reproducibility bölümünde belgelenmiştir; upstream PR düşünülmektedir)
 - Inference: SetTransformer, model_base checkpoint, 5-min aggregated 128-dim
   embedding × 4 modalite
 
@@ -34,12 +38,58 @@ Bonferroni + BH-FDR:
 | RESP × AHI_obs | 0.00267 | 0.080 | **0.027** | FDR (Bonferroni borderline) |
 | MULTI × BMI | 0.00540 | 0.162 | **0.040** | FDR |
 
+### ⚠️ Circularity Kaveati — Bu Bulgu "Positive Control" mu, "Novel Discovery" mu?
+
+**Bu bulguyu novel klinik keşif olarak sunmak yanıltıcı olur.** İki
+bağımsız denetim (2026-09-16) aynı circularity endişesini işaretledi:
+
+- **AHI** (apne-hipopne indeksi) ve **ODI3** (oksijen desaturation
+  indeksi) tanım gereği respiratory kanallarından (nasal cannula,
+  thermistor, thoracic/abdominal effort belt, SpO2) hesaplanır — AASM
+  kurallarıyla teknisyen tarafından skorlanır
+- **SleepFM RESP embedding** aynı respiratory kanalların 128-dim
+  öğrenilmiş temsilidir
+- **Bu tam tautoloji değildir** — AHI etiketi SleepFM pretrain'inde
+  kullanılmadı (contrastive objective same-subject vs diff-subject),
+  yani embedding'in AHI'yi encode etmesi öğrenilmiş bir davranış
+- **Ancak "information circularity" var** — RESP kanaldaki apneik
+  olayların RESP embedding'e encode olması ve AHI ile korele çıkması
+  **mekanik olarak beklenir**
+
+**Doğru çerçeve:** Bu bulgu bir **positive control / sanity check**tir.
+"RESP × AHI cross-modality Bonferroni'yi geçti" cümlesi, "SleepFM'in
+respiratory foundation embedding'i girdi kanallarındaki klinik olarak
+anlamlı feature'ı — fine-tuning olmadan — pretraining sonrası
+koruyor" demektir. Eğer RESP × AHI Bonferroni'yi geçmeseydi, SleepFM'in
+RESP kanalını doğru okumadığı sinyali olurdu.
+
+**Bunun ne olmadığı önemli:**
+- ❌ "SleepFM sleep apnea'yı yakalayan yeni bir tanı yöntemi" değil
+- ❌ Nature/npj Digital Medicine seviyesinde bilimsel keşif değil
+- ❌ Klinik risk skorlaması yapabildiğinin kanıtı değil (Phase 15 §6
+  ham SleepFM + KNN'in AHI sıralamasını yapamadığını gösterdi)
+
+**Bu bulgunun gerçek yayın niteliğini test edecek ek analizler:**
+- **Modality-transfer test:** RESP embedding'inden **ECG-derived AHI**
+  (heart rate variability + apnea proxy) predict edilebilir mi? Aynı
+  fizyolojik olayı farklı kanaldan görebilme kabiliyeti
+- **Held-out cohort calibration:** Farklı NSRR datasetinde (SHHS, WSC)
+  aynı bulgunun tekrarlanabilirliği
+- **Linear probe vs raw baseline:** RESP embedding + linear probe
+  performansı SpO2 mean + ODI'den elde edilen basit özellik ile
+  karşılaştırılmalı — foundation embedding'in gerçek ek değeri ölçülür
+- **Multiple cohort-seed sensitivity:** `random_state=42` yerine 10
+  farklı seed ile aynı 100'lük subset'ler seçilse aynı bulgu gelir mi
+
+---
+
 **Yorum:**
 
 - **RESP modality Sleep Apnea (AHI) ve oksijen desaturation (ODI3)
   sinyalini yakalıyor** — bu klinik olarak beklenen bir sonuç
-  (respiratory embedding sleep apnea ile ilişkili olmalı), ama Phase 15
-  n=20'de gücü yakalayamamıştı
+  (respiratory embedding sleep apnea ile ilişkili olmalı, yukarıdaki
+  circularity kaveatiyle birlikte oku), ama Phase 15 n=20'de gücü
+  yakalayamamıştı
 - Phase 15 §6'nın **ham SleepFM + KNN klinik risk sıralaması yapamıyor**
   bulgusu hâlâ geçerli — cross-modality FWER'i geçmek bir şeyin
   "downstream klinik risk skorlaması yapılabilir" demek değil, sadece
@@ -159,13 +209,23 @@ daha zor.
 | Ham SleepFM + KNN klinik risk | Ters yönlü | (test edilmedi) |
 | Session-shuffle biometric-vs-artifact | Yapamaz | Hâlâ yapamaz (yapısal) |
 
-## Yayınlanabilir Bulgu
+## Yayınlanabilir Bulgu — Çerçeve
 
-**RESP modality embedding, sleep apnea (AHI, ODI3) ile cross-modality
-Bonferroni ve FDR'yi geçen istatistiksel olarak sağlam bir ilişki
-göstermektedir. Bu, SleepFM'in respiratory foundation embedding'inin —
-CoxPH fine-tuning olmadan bile — sleep apnea diagnostic space'inde
-klinik olarak beklenen bir sinyal taşıdığını gösterir.**
+**RESP foundation embedding'i, girdi kanallarına özgü klinik feature'ı
+(AHI, ODI3) sanity-check düzeyinde koruyor. Bu bir positive-control
+niteliğindedir, novel klinik keşif değildir.** SleepFM pretraining'in
+AHI-etiketi kullanmadan bile respiratory disease space'te FWER-anlamlı
+bir sinyal taşıdığının doğrulanmasıdır (bkz. yukarıda "Circularity
+Kaveati").
+
+Yayın olarak defensible çerçeve:
+> "SleepFM RESP embedding sleep apnea diagnostic feature'larıyla
+> cross-modality Bonferroni-anlamlı ilişki gösterir (n=100, AHI + ODI3).
+> Bu positive control sonuç foundation model'in girdi kanallarındaki
+> klinik olarak anlamlı sinyali koruduğunu doğrular; ham foundation
+> embedding + KNN klinik risk sıralaması için ise yetersizdir (Phase 15
+> §6). Downstream CoxPH fine-tuning + modality-transfer testi + held-out
+> cohort replikasyonu novel klinik iddia için gerekli sonraki adımdır."
 
 ## Çıktı Dosyaları
 

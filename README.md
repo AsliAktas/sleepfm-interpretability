@@ -15,10 +15,17 @@ Proje iki paradigma taşıyor. Aktif olan **gerçek MESA cohort** paradigmasıd�
 
 | Paradigma | Konum | Durum |
 |---|---|---|
-| **Real MESA cohort** (Phase 13c → Phase 16) | `src/real_embeddings.py`, `src/chunk_level_analysis.py`, `src/rigor_analysis.py`, `src/clinical_bridge_adapter.py` | **Aktif** |
+| **Real MESA cohort** (Phase 13c → Phase 22) | `src/real_embeddings.py`, `src/chunk_level_analysis.py`, `src/rigor_analysis.py`, `src/clinical_bridge_adapter.py` | **Aktif** |
 | Mock disease demo (Nisan 2026, ilk fazlar) | `src/legacy/` (Phase 16s'te izole edildi) | Legacy — metodoloji öğrenme çerçevesi; bilimsel çıkarım için kullanılmaz. Bkz. [`src/legacy/README.md`](src/legacy/README.md) |
 
-Son bilimsel özet: [`reports/phase15_defensibility/README.md`](reports/phase15_defensibility/README.md)
+**Son bilimsel özet:** [`reports/phase22_defensibility_n100/README.md`](reports/phase22_defensibility_n100/README.md)
+— n=100 clean cohort'ta cross-modality Bonferroni'yi geçen ilk pozitif
+bulgular (RESP × AHI, RESP × ODI3; positive-control düzeyinde, bkz.
+raporun "Circularity Kaveati" bölümü).
+
+Önceki fazlar: [`reports/phase15_defensibility/`](reports/phase15_defensibility/README.md)
+(n=20, "sağlam pozitif bulgu YOK" verdikti — Phase 22'de revize edildi).
+
 Pretrain-independence kanıtı: [`reports/pretrain_independence/README.md`](reports/pretrain_independence/README.md)
 
 ---
