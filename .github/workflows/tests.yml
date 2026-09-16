@@ -63,13 +63,17 @@ jobs:
           echo "✅ No bare MESA ID leaks"
 
       - name: Confirm DEFAULT_SUBJECTS is empty
+        # Grep the source rather than importing — the module pulls tqdm/requests
+        # which aren't installed in this lightweight gate job.
         run: |
-          python -c "
-          import sys; sys.path.insert(0, 'scripts')
-          from download_nsrr_mesa import DEFAULT_SUBJECTS
-          assert DEFAULT_SUBJECTS == (), f'DEFAULT_SUBJECTS must be empty, got: {DEFAULT_SUBJECTS}'
-          print('✅ DEFAULT_SUBJECTS is empty')
-          "
+          set +e
+          if ! grep -qE '^DEFAULT_SUBJECTS: Tuple\[str, \.\.\.\] = \(\)$' scripts/download_nsrr_mesa.py; then
+            echo "❌ DEFAULT_SUBJECTS is not the empty tuple in scripts/download_nsrr_mesa.py"
+            echo "Current line:"
+            grep -n 'DEFAULT_SUBJECTS' scripts/download_nsrr_mesa.py || true
+            exit 1
+          fi
+          echo "✅ DEFAULT_SUBJECTS is the empty tuple"
 
   pretrain-independence:
     name: Pretrain-independence CSV assertion
