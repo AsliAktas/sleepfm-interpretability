@@ -138,3 +138,24 @@ JSON'ları **method demo**dur: KNN-proxy risk skoru, foundation model
 - **SleepFM**: [A multimodal sleep foundation model for disease prediction](https://doi.org/10.1038/s41591-025-04133-4) — *Nature Medicine, 2026*
 - **Upstream repo**: [zou-group/sleepfm-clinical](https://github.com/zou-group/sleepfm-clinical)
 - **MESA / NSRR**: [sleepdata.org/datasets/mesa](https://sleepdata.org/datasets/mesa)
+
+---
+
+## Acknowledgment
+
+This work uses data obtained through the National Sleep Research Resource.
+
+> NSRR R24 HL114473: NHLBI National Sleep Research Resource.
+
+Required under Section 16 of the NSRR Data Access and Use Agreement, and to
+be reproduced in any publication or presentation arising from this work. The
+obligation survives expiry of the agreement (Section 17).
+
+Data access is governed by a signed DAUA (3 April 2026). No NSRR data is
+included in this repository: raw recordings, derived embeddings and
+subject-level identifiers are excluded from version control, and clinical
+values in the demonstration outputs are binned rather than exact. The NSRR
+confirmed on 1 October 2026 that this analysis falls within the approved
+Specific Purpose and that sharing code is permitted where no data is shared.
+Extending the work or using MESA data for additional projects requires a new
+proposal.
