@@ -1,6 +1,6 @@
 # SleepFM Interpretability
 
-[![tests](https://github.com/AsliAktas/sleepfm_interpretability/actions/workflows/tests.yml/badge.svg)](https://github.com/AsliAktas/sleepfm_interpretability/actions/workflows/tests.yml)
+[![tests](https://github.com/AsliAktas/sleepfm-interpretability/actions/workflows/tests.yml/badge.svg)](https://github.com/AsliAktas/sleepfm-interpretability/actions/workflows/tests.yml)
 
 SleepFM foundation model'inin embedding uzayının **klinik veriyle**
 denetlenebilir analizi. Gerçek MESA PSG kayıtları → SleepFM embeddings →
@@ -59,8 +59,8 @@ NSRR üzerinden indirilir; ham EDF/XML repoya commit edilmez.
 Python 3.10, pinned dependencies:
 
 ```bash
-git clone https://github.com/AsliAktas/sleepfm_interpretability.git
-cd sleepfm_interpretability
+git clone https://github.com/AsliAktas/sleepfm-interpretability.git
+cd sleepfm-interpretability
 pip install -r requirements.txt
 ```
 
@@ -73,7 +73,7 @@ NSRR data access (DUA gerekli) ayrıca kurulmalı — bkz.
 ## Proje Yapısı
 
 ```
-sleepfm_interpretability/
+sleepfm-interpretability/
 ├── src/                              # Aktif analiz modülleri
 │   ├── real_embeddings.py            # HDF5 → spherical mean → subject-level table
 │   ├── chunk_level_analysis.py       # Chunk-level HDBSCAN + purity
