@@ -23,6 +23,11 @@ Proje iki paradigma taşıyor. Aktif olan **gerçek MESA cohort** paradigmasıd�
 bulgular (RESP × AHI, RESP × ODI3; positive-control düzeyinde, bkz.
 raporun "Circularity Kaveati" bölümü).
 
+**Modality-transfer sanity check:** [`reports/phase25_modality_transfer/README.md`](reports/phase25_modality_transfer/README.md)
+— Pozitif kontrol (RESP × AHI) ve negatif kontrol (BAS × AHI, 702× fold-gap)
+birlikte geçti. Altı katmanlı sanity check SleepFM'in modality separation'ının
+sahici olduğunu doğruluyor.
+
 Önceki fazlar: [`reports/phase15_defensibility/`](reports/phase15_defensibility/README.md)
 (n=20, "sağlam pozitif bulgu YOK" verdikti — Phase 22'de revize edildi).
 

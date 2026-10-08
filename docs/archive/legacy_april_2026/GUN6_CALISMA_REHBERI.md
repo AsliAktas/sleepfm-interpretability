@@ -374,7 +374,7 @@ def plot_modality_importance_heatmap(
     annotate=True (sayılar hücrelerde görünür).
     cmap="YlOrRd" — sıfır açık sarı, yüksek değer koyu kırmızı.
 
-    Bu görsel Rahul'a gönderilecek. Temiz, açıklamalı olmalı.
+    Bu görsel SleepFM ekibine gönderilecek. Temiz, açıklamalı olmalı.
     """
 ```
 

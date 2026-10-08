@@ -511,7 +511,7 @@ Test-Path "outputs\mock_modality_importance.png"
   - 12 satır (hastalık) × 4 sütun (modalite) görünüyor mu?
   - Kardiyak hastalıklar (Heart Failure, AFib) ECG sütununda koyulaşıyor mu?
   - Görsel temiz ve etiketli mi?
-  - **Evet** → Rahul'a gönderilebilir seviyede.
+  - **Evet** → SleepFM ekibine gönderilebilir seviyede.
 
 - **False** → Gün 6'da bu adım tamamlanmamış. Hızlı üretmek için:
   ```
@@ -522,10 +522,10 @@ Test-Path "outputs\mock_modality_importance.png"
 
 ---
 
-**Kontrol 4: Rahul ile İletişim Durumu**
+**Kontrol 4: Upstream ekiple İletişim Durumu**
 
-- Weights hakkında Rahul'dan yanıt geldi mi?
-  - **Evet** → Yanıtı `HAFTA1_OZET.md`'ye "Rahul'dan gelen bilgi" başlığıyla ekle.
+- Weights hakkında upstream ekipten yanıt geldi mi?
+  - **Evet** → Yanıtı `HAFTA1_OZET.md`'ye "Upstream'den gelen bilgi" başlığıyla ekle.
   - **Hayır** → Takip e-postası göndermeyi değerlendir. `mock_modality_importance.png`'yi
     göndereceğin zamana kadar bekleyebilirsin.
 
