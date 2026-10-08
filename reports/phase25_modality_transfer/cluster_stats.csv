@@ -1,0 +1,5 @@
+modality,available,n_seeds,n_clusters_mean,n_clusters_std,n_clusters_min,n_clusters_max,verdict
+BAS,True,10,29.2,2.0396078054371136,25,32,HEALTHY
+RESP,True,10,26.2,2.749545416973504,21,29,HEALTHY
+EKG,True,10,30.3,2.491987158875422,25,34,HEALTHY
+EMG,True,10,26.3,2.0518284528683193,22,29,HEALTHY

@@ -1,0 +1,5 @@
+modality,available,n_seeds,ari_mean,ari_std,ari_min,ari_max,verdict
+BAS,True,10,0.5583725618446315,0.08518069128807661,0.3959375411346584,0.7569092914670817,MODERATE: partial stability; some seed-dependent variation
+RESP,True,10,0.5590774739754036,0.1161671953332533,0.37843923048168787,0.8576236085943567,MODERATE: partial stability; some seed-dependent variation
+EKG,True,10,0.5477249614928,0.0783520542731399,0.4205038644386808,0.780860500927888,MODERATE: partial stability; some seed-dependent variation
+EMG,True,10,0.5506291930092115,0.112519975443443,0.368364181330476,0.8259426546552542,MODERATE: partial stability; some seed-dependent variation
