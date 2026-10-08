@@ -74,10 +74,19 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 PHASE22_RIGOR = REPO / "reports" / "phase22_rigor_n100"
 DEFAULT_OUTPUT = REPO / "reports" / "phase25_modality_transfer"
-DEFAULT_UPSTREAM_CHANNEL_GROUPS = Path(
-    r"C:/Users/User/Desktop/Projeler/SleepFM/sleepFMoriginal/"
-    r"sleepfm-clinical/sleepfm/configs/channel_groups.json"
-)
+# Upstream SleepFM channel_groups.json path. Resolved from the
+# SLEEPFM_UPSTREAM_DIR environment variable (see .env.example); the
+# channel audit step is skipped with a warning if the variable is unset
+# or the file is missing.
+_UPSTREAM_DIR_ENV = "SLEEPFM_UPSTREAM_DIR"
+_CHANNEL_GROUPS_RELPATH = Path("sleepfm/configs/channel_groups.json")
+
+
+def default_upstream_channel_groups() -> Path | None:
+    root = os.environ.get(_UPSTREAM_DIR_ENV)
+    if not root:
+        return None
+    return Path(root) / _CHANNEL_GROUPS_RELPATH
 
 
 # ---------------------------------------------------------------------------
@@ -587,9 +596,11 @@ def _overall_verdict(
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    p.add_argument("--channel-groups", type=Path,
-                   default=DEFAULT_UPSTREAM_CHANNEL_GROUPS,
-                   help="Path to upstream SleepFM channel_groups.json")
+    p.add_argument("--channel-groups", type=Path, default=None,
+                   help=("Path to upstream SleepFM channel_groups.json. "
+                         "Defaults to $SLEEPFM_UPSTREAM_DIR/sleepfm/configs/"
+                         "channel_groups.json; the channel audit is skipped "
+                         "with a warning if neither is available."))
     p.add_argument("--cohort-root", type=Path, default=None,
                    help="Override cohort root (defaults to SLEEPFM_COHORT_ROOT or data/n100_cohort_run)")
     return p.parse_args()
@@ -644,10 +655,18 @@ def main() -> None:
     for _, r in broader_df.iterrows():
         logger.info("C. %s: %s", r["modality"], r["verdict"])
 
-    # Layer D — channel audit
-    channels = channel_audit(args.channel_groups)
-    write_channel_audit_md(channels, out_dir / "channel_audit.md")
-    logger.info("D. channel audit written (%d groups)", len(channels))
+    # Layer D — channel audit (optional; needs upstream SleepFM checkout)
+    channel_groups_path = args.channel_groups or default_upstream_channel_groups()
+    if channel_groups_path and channel_groups_path.exists():
+        channels = channel_audit(channel_groups_path)
+        write_channel_audit_md(channels, out_dir / "channel_audit.md")
+        logger.info("D. channel audit written (%d groups) from %s",
+                    len(channels), channel_groups_path)
+    else:
+        logger.warning(
+            "D. channel audit skipped: upstream channel_groups.json not available"
+            " (set %s or pass --channel-groups)", _UPSTREAM_DIR_ENV,
+        )
 
     # Layer E — effect-gap analysis (empirical, Kruskal-Wallis-appropriate)
     corr_df = pd.read_csv(PHASE22_RIGOR / "cross_modality_family_correction.csv")
